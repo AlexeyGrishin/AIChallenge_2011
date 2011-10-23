@@ -1,6 +1,7 @@
 package bot.brain;
 
 import bot.*;
+import bot.brain.teams.Guard;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,6 +12,9 @@ public class BrainBot extends Bot {
 
     private static final int ME = 0;
     private Strategy strategy;
+    private boolean firstRun = true;
+    private List<Guard> guards = new ArrayList<Guard>();
+    private List<Ant> justBorn = new ArrayList<Ant>();
 
     public BrainBot(Strategy strategy) {
         this.strategy = strategy;
@@ -18,6 +22,7 @@ public class BrainBot extends Bot {
 
     @Override
     public void beforeUpdate() {
+        justBorn.clear();
         oldAnts.clear();
         oldAnts.addAll(ants);
         ants.clear();
@@ -28,6 +33,14 @@ public class BrainBot extends Bot {
     public void afterUpdate() {
         for (Ant ant: oldAnts) {
             ant.die();
+        }
+        if (firstRun) {
+            for (Tile hill: getAnts().getMyHills()) {
+                Guard guard = new Guard(hill);
+                guards.add(guard);
+                guard.setField(getAnts());
+            }
+            firstRun = false;
         }
     }
 
@@ -50,9 +63,11 @@ public class BrainBot extends Bot {
             removeCrushedHills(ants);
 
             //then observe those who are not busy and assign orders
-            rushTheHill(this.ants);
-            harvestFood(this.ants, unorderedFood);
-            inspectNewArea(this.ants);
+            List<Ant> freeAnts = new ArrayList<Ant>(this.ants);
+            guardOurHill(freeAnts);
+            rushTheHill(freeAnts);
+            harvestFood(freeAnts, unorderedFood);
+            inspectNewArea(freeAnts);
 
             //and update those of them who did not performed an action before
             for (Ant ant: this.ants) {
@@ -67,6 +82,29 @@ public class BrainBot extends Bot {
             for (StackTraceElement el: e.getStackTrace()) {
                 getAnts().log("    " + el.toString());
             }
+        }
+    }
+
+    private void guardOurHill(List<Ant> ants) {
+        int guardCount = 0;
+        for (Guard g: guards) {
+            guardCount += g.getCount();
+        }
+        int newCount = strategy.getCountOfGuards(ants) - guardCount;
+        if (newCount > 0) {
+            for (Ant ant: justBorn) {
+                for (Guard guard: guards) {
+                    boolean shallAssign = guards.size() == 1 || guard.isNear(ant);
+                    if (guard.isRequired() && guard.isHillAlive() && shallAssign) {
+                        guard.assign(ant);
+                        break;
+                    }
+                }
+            }
+        }
+        for (Guard g: guards) {
+            g.doTurn();
+            g.removeManagedFrom(ants);
         }
     }
 
@@ -109,7 +147,7 @@ public class BrainBot extends Bot {
                 case WEST: dx = -10; break;
                 case SOUTH: dy = -10; break;
             }
-            Tile tile = getAnts().normalize(position.getCol() + dx, position.getRow() + dy);
+            Tile tile = getAnts().normalize(position.getRow() + dy, position.getCol() + dx);
             ant.goAndSeeAround(tile);
         }
 
@@ -137,12 +175,12 @@ public class BrainBot extends Bot {
     private List<Ant> oldAnts = new ArrayList<Ant>();
 
     @Override
-    public void addAnt(int row, int col, int owner) {
-        super.addAnt(row, col, owner);
+    public Tile addAnt(int row, int col, int owner) {
+        Tile tile = super.addAnt(row, col, owner);
         if (owner == ME) {
             boolean found = false;
             for (Ant ant: oldAnts) {
-                if (ant.isOn(row, col)) {
+                if (ant.isOn(tile)) {
                     this.ants.add(ant);
                     this.oldAnts.remove(ant);
                     found = true;
@@ -150,10 +188,17 @@ public class BrainBot extends Bot {
                 }
             }
             if (!found) {
-                this.ants.add(new Ant(new Tile(row, col), getAnts()));
+                Ant ant = new Ant(tile, getAnts());
+                this.ants.add(ant);
+                this.justBorn.add(ant);
             }
         }
+        return tile;
     }
 
+
+    public List<Ant> getTheAnts() {
+        return ants;
+    }
 
 }

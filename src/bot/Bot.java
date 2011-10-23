@@ -61,8 +61,10 @@ public abstract class Bot extends AbstractSystemInputParser {
      * {@inheritDoc}
      */
     @Override
-    public void addAnt(int row, int col, int owner) {
-        ants.update(owner > 0 ? Ilk.ENEMY_ANT : Ilk.MY_ANT, new Tile(row, col));
+    public Tile addAnt(int row, int col, int owner) {
+        Tile tile = new Tile(row, col);
+        ants.update(owner > 0 ? Ilk.ENEMY_ANT : Ilk.MY_ANT, tile);
+        return tile;
     }
     
     /**

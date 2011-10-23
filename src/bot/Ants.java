@@ -431,12 +431,12 @@ public class Ants {
         }
     }
 
-    public Tile normalize(int x, int y) {
-        while (x < 0) x+= cols;
-        while (y < 0) y+= rows;
-        while (x >= getCols()) x-= cols;
-        while (y >= getRows()) y-= rows;
-        return new Tile(y, x);
+    public Tile normalize(int row, int col) {
+        while (col < 0) col+= cols;
+        while (row < 0) row+= rows;
+        while (col >= getCols()) col-= cols;
+        while (row >= getRows()) row-= rows;
+        return new Tile(row, col);
     }
 
     public void removeEnemyHill(Tile hill) {

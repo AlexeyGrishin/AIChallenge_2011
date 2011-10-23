@@ -28,7 +28,14 @@ public abstract class MoveOrder implements AntOrder {
             ants.log(ant + ": observed " + finder.getObservedCells() + " cells for " + finder.getSpentTime() + "ms!");
         }
         if (isFeasible()) {
-            ants.log(ant + ": get order " + this + ", there are " + path.size() + " steps left");
+            Tile newTarget = path.get(path.size()-1).to;
+            if (isNormalDistanceFromTarget(ants.getDistance(target, newTarget))) {
+                ants.log(ant + ": get order " + this + ", there are " + path.size() + " steps left");
+            }
+            else {
+                ants.log(ant + ": get order " + this + ", but path was found to " + newTarget + " only, which is not acceptable");
+                path.clear();
+            }
         }
         else {
             ants.log(ant + ": get order " + this + ", but it is not feaseable =(");
@@ -51,6 +58,10 @@ public abstract class MoveOrder implements AntOrder {
         if (isTargetReached() || isDone()) {
             done();
         }
+    }
+
+    protected boolean isNormalDistanceFromTarget(int distance2) {
+        return true;
     }
 
     protected void onMovementImpossible() {

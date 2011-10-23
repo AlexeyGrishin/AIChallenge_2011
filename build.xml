@@ -1,10 +1,85 @@
 <project name="ololo">
-    <target name="battle">
+
+    <target name="run.battle">
         <exec command="cmd /c play.cmd" dir="./tools" />
     </target>
 
-    <target name="test">
+    <target name="run.test">
         <exec command="cmd /c play-alone.cmd" dir="./tools"/>
     </target>
+
+    <target name="compile">
+        <delete dir="out"/>
+        <mkdir dir="out"/>
+        <javac srcdir="src" destdir="out"/>
+    </target>
+
+
+    <property file="src/version.ini"/>
+    <target name="pack" depends="compile">
+        <delete file="tools/my/${name}${version}.zip"/>
+        <delete file="tools/my/${name}${version}.jar"/>
+        <jar destfile="tools/my/${name}${version}.jar" basedir="out"/>
+        <jar destfile="tools/my/last.jar" basedir="out"/>
+        <zip destfile="tools/my/${name}${version}.zip" basedir="src"/>
+        <zip destfile="tools/my/last.zip" basedir="src"/>
+    </target>
+
+
+    <target name="run maze4 2 ours 2 hunters">
+        <exec dir="tools" executable="cmd" searchpath="tools">
+            <arg value="/c"/>
+            <arg path="tools/do-play.cmd"/>
+            <arg path="tools/maps/real/maze_04p_02.map"/>
+            <arg value="java -classpath ./my/last.jar MyBot"/>
+            <arg value="java -classpath ./my/Brain1.jar MyBot"/>
+            <!--arg value="python sample_bots\python\HunterBot.py"/-->
+            <arg value="python sample_bots\python\HunterBot.py"/>
+            <arg value="python sample_bots\python\HunterBot.py"/>
+        </exec>
+    </target>
+
+    <target name="run maze2 2 ours">
+        <exec dir="tools" executable="cmd" searchpath="tools">
+            <arg value="/c"/>
+            <arg path="tools/do-play.cmd"/>
+            <arg path="tools/maps/real/maze_02p_01.map"/>
+            <arg value="java -classpath ./my/last.jar MyBot"/>
+            <arg value="java -classpath ./my/Brain1.jar MyBot"/>
+            <!--arg value="python sample_bots\python\HunterBot.py"/-->
+        </exec>
+    </target>
+
+    <target name="run maze6 2 ours 4 hunters">
+        <exec dir="tools" executable="cmd" searchpath="tools">
+            <arg value="/c"/>
+            <arg path="tools/do-play.cmd"/>
+            <arg path="tools/maps/real/maze_06p_01.map"/>
+            <arg value="java -classpath ./my/last.jar MyBot"/>
+            <arg value="java -classpath ./my/Brain1.jar MyBot"/>
+            <!--arg value="python sample_bots\python\HunterBot.py"/-->
+            <arg value="python sample_bots\python\HunterBot.py"/>
+            <arg value="python sample_bots\python\HunterBot.py"/>
+            <arg value="python sample_bots\python\HunterBot.py"/>
+            <arg value="python sample_bots\python\HunterBot.py"/>
+        </exec>
+    </target>
+
+    <target name="run walk7 2 ours 5 hunters">
+        <exec dir="tools" executable="cmd" searchpath="tools">
+            <arg value="/c"/>
+            <arg path="tools/do-play.cmd"/>
+            <arg path="tools/maps/real/random_walk_07p_02.map"/>
+            <arg value="java -classpath ./my/last.jar MyBot"/>
+            <arg value="java -classpath ./my/Brain1.jar MyBot"/>
+            <!--arg value="python sample_bots\python\HunterBot.py"/-->
+            <arg value="python sample_bots\python\HunterBot.py"/>
+            <arg value="python sample_bots\python\HunterBot.py"/>
+            <arg value="python sample_bots\python\HunterBot.py"/>
+            <arg value="python sample_bots\python\HunterBot.py"/>
+            <arg value="python sample_bots\python\HunterBot.py"/>
+        </exec>
+    </target>
+
 
 </project>

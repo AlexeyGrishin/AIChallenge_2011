@@ -36,4 +36,8 @@ public class Order {
     public Aim getAim() {
         return Aim.fromSymbol(direction);
     }
+
+    public Tile getPosition() {
+        return new Tile(row, col);
+    }
 }

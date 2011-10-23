@@ -2,7 +2,9 @@ package bot.brain;
 
 import bot.*;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.List;
 
 public class Ant {
 
@@ -11,6 +13,7 @@ public class Ant {
     private static int NR = 1;
     private int nr = NR++;
     private boolean moved = false;
+    private List<AntListener> listeners = new ArrayList<AntListener>();
 
     private LinkedList<AntOrder> orders = new LinkedList<AntOrder>();
 
@@ -92,6 +95,9 @@ public class Ant {
 
     public void die() {
         ants.log(this + " =(");
+        for (AntListener listener:listeners) {
+            listener.onDie(this);
+        }
     }
     
     public String toString() {
@@ -115,4 +121,15 @@ public class Ant {
     public boolean isRushing() {
         return currentOrder().isRushing();
     }
+
+    public void addListener(AntListener listener) {
+        this.listeners.add(listener);
+    }
+
+    public void removeListener(AntListener listener) {
+        this.listeners.add(listener);
+    }
+
+
+
 }

@@ -11,6 +11,10 @@ public class HarvestOrder extends MoveOrder {
 
     }
 
+    protected boolean isNormalDistanceFromTarget(int distance2) {
+        return distance2 <= 2;
+    }
+
     @Override
     protected boolean isDone() {
         return getTargetIlk() != Ilk.FOOD || isTargetReached();

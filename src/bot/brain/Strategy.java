@@ -30,4 +30,8 @@ public class Strategy {
             return Math.max(20 - rushers, 0);
         }
     }
+
+    public int getCountOfGuards(List<Ant> ants) {
+        return ants.size() / 10;
+    }
 }

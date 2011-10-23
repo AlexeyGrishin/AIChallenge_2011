@@ -10,9 +10,11 @@ import util.MockAnts;
 
 import java.io.IOException;
 
+import static org.junit.Assert.assertFalse;
+
 public class FoodHarvestingTest {
 
-    private Bot bot;
+    private BrainBot bot;
     private MockAnts ants;
 
     @Before
@@ -33,4 +35,24 @@ public class FoodHarvestingTest {
         ants.logTraversingMap();
         ants.assertOrder(new Tile(3,0), new Tile(3, 4));
     }
+
+
+    @Test
+    public void testSkipFoodIfNotReachable() throws IOException {
+        ants = new MockAnts("tests/logic/foodisnotvisible.map");
+        bot = new BrainBot(new Strategy());
+        bot.setAnts(ants);
+
+        GameMock mock = new GameMock(bot, ants);
+        mock.turn();
+        for (int i = 0; i < 50; i++) {
+            mock.turn();
+        }
+
+        ants.logTraversingMap();
+
+        assertFalse(bot.getTheAnts().get(0).isHarvesting());
+
+    }
+
 }

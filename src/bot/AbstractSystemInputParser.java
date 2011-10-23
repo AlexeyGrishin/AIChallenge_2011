@@ -205,7 +205,7 @@ public abstract class AbstractSystemInputParser extends AbstractSystemInputReade
      * @param col column index
      * @param owner player id
      */
-    public abstract void addAnt(int row, int col, int owner);
+    public abstract Tile addAnt(int row, int col, int owner);
     
     /**
      * Adds new food tile.

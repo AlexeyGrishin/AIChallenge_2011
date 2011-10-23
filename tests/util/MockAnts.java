@@ -115,7 +115,7 @@ public class MockAnts extends Ants {
                 if (el == null) {
                     el = ' ';
                 }
-                if (visited.contains(new Tile(row, col))) {
+                if (this.map[row][col] == Ilk.LAND && visited.contains(new Tile(row, col))) {
                     el = '#';
                 }
                 System.out.print(el);
@@ -123,5 +123,9 @@ public class MockAnts extends Ants {
             System.out.println();
         }
 
+    }
+
+    public void assertOurAnt(int row, int col) {
+        assertEquals(Ilk.MY_ANT, getIlk(new Tile(row, col)));
     }
 }
