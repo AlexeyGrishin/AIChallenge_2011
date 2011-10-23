@@ -12,6 +12,7 @@ public class GameMock {
 
     private Bot bot;
     private MockAnts mockAnts;
+
     public GameMock(Bot bot, MockAnts mockAnts) {
         this.bot = bot;
         this.mockAnts = mockAnts;
@@ -27,9 +28,33 @@ public class GameMock {
     private List<Tile> enemies = new ArrayList<Tile>();
     private List<Tile> food = new ArrayList<Tile>();
     private List<Tile> hills = new ArrayList<Tile>();
+    private List<Tile> enemyHills = new ArrayList<Tile>();
 
 
     public void turn() {
+        update();
+        doTurn();
+        processOrders();
+    }
+
+    public void processOrders() {
+        for (Order order: mockAnts.getOrders()) {
+            Tile origin = order.getPosition();
+            Tile result = mockAnts.getTile(origin, order.getAim());
+            ants.remove(origin);
+            ants.add(result);
+
+            if (food.contains(result)) {
+                food.remove(result);
+            }
+        }
+    }
+
+    public void doTurn() {
+        bot.doTurn();
+    }
+
+    public void update() {
         bot.beforeUpdate();
         for (Tile food: this.food) {
             bot.addFood(food.getRow(), food.getCol());
@@ -43,19 +68,10 @@ public class GameMock {
         for (Tile hill: hills) {
             bot.addHill(hill.getRow(), hill.getCol(), 0);
         }
-        bot.afterUpdate();
-        bot.doTurn();
-
-        for (Order order: mockAnts.getOrders()) {
-            Tile origin = order.getPosition();
-            Tile result = mockAnts.getTile(origin, order.getAim());
-            ants.remove(origin);
-            ants.add(result);
-
-            if (food.contains(result)) {
-                food.remove(result);
-            }
+        for (Tile hill: enemyHills) {
+            bot.addHill(hill.getRow(), hill.getCol(), 1);
         }
+        bot.afterUpdate();
     }
 
     public void setFood(Tile tile) {
@@ -96,5 +112,9 @@ public class GameMock {
 
     public void removeEnemy(Tile enemy) {
         enemies.remove(enemy);
+    }
+
+    public void addEnemyHill(Tile tile) {
+        enemyHills.add(tile);
     }
 }

@@ -16,13 +16,14 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class HillRushingTest {
 
-    private Bot bot;
+    private BrainBot bot;
     private MockAnts ants;
     private Tile target;
 
@@ -65,6 +66,39 @@ public class HillRushingTest {
         assertEquals(target, antPos);
 
 
+    }
+
+    @Test
+    public void rushTheHill_nearestOnes() throws IOException {
+        Strategy strategy = mock(Strategy.class);
+        when(strategy.getCountOfRushers(Matchers.<List<Ant>>any())).thenReturn(2);
+        bot = new BrainBot(strategy);
+        ants = new MockAnts("tests/logic/hill2.map");
+        bot.setAnts(ants);
+        GameMock mock = new GameMock(bot, ants);
+        mock.addEnemyHill(new Tile(11, 8));
+        mock.update();
+        List<Ant> listOfAnts = bot.getTheAnts();
+        Ant firstRusher = getAntOn(listOfAnts, 5, 6);
+        Ant secondRusher = getAntOn(listOfAnts, 5, 7);
+        Ant firstHarvester = getAntOn(listOfAnts, 4, 6);
+        Ant secondHarvester = getAntOn(listOfAnts, 4, 7);
+        mock.doTurn();
+        assertTrue(firstRusher.isRushing());
+        assertTrue(secondRusher.isRushing());
+        assertFalse(firstHarvester.isRushing());
+        assertFalse(secondHarvester.isRushing());
+
+    }
+
+    private Ant getAntOn(List<Ant> listOfAnts, int row, int col) {
+        for (Ant ant: listOfAnts) {
+            if (ant.getPosition().equals(new Tile(row, col))) {
+                return ant;
+            }
+        }
+        fail("There is no ant on " + row + ", " + col);
+        return null;
     }
 
 }

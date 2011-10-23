@@ -28,6 +28,7 @@ public class HillDefendingTest {
     private BrainBot bot;
     private GameMock game;
     private Tile enemy;
+    private static final Tile SECOND_CENTER = new Tile(9, 9);
 
     @Before
     public void setUp() {
@@ -43,18 +44,10 @@ public class HillDefendingTest {
         }
 
         ants.logTraversingMap();
-        ants.assertOurAnt(1, 2);
-        ants.assertOurAnt(1, 4);
-        ants.assertOurAnt(2, 1);
         ants.assertOurAnt(2, 2);
         ants.assertOurAnt(2, 4);
-        ants.assertOurAnt(2, 5);
-        ants.assertOurAnt(4, 1);
         ants.assertOurAnt(4, 2);
         ants.assertOurAnt(4, 4);
-        ants.assertOurAnt(4, 5);
-        ants.assertOurAnt(5, 2);
-        ants.assertOurAnt(5, 4);
     }
 
     @Test
@@ -66,8 +59,7 @@ public class HillDefendingTest {
 
         ants.logTraversingMap();
         ants.assertOurAnt(4, 2);
-        ants.assertOurAnt(5, 2);
-        ants.assertOurAnt(4, 1);
+
 
     }
 
@@ -85,15 +77,9 @@ public class HillDefendingTest {
 
         ants.logTraversingMap();
         assertEquals("Expected that all ants will be born", 11, born);
-        ants.assertOurAnt(1, 2);
-        ants.assertOurAnt(1, 4);
-        ants.assertOurAnt(4, 1);
+
         ants.assertOurAnt(4, 2);
         ants.assertOurAnt(4, 4);
-        ants.assertOurAnt(4, 5);
-        ants.assertOurAnt(5, 2);
-        ants.assertOurAnt(5, 4);
-
     }
 
 
@@ -110,16 +96,16 @@ public class HillDefendingTest {
         prepare("tests/logic/defence5.map");
         enemy = new Tile(8, 2);
         game.setEnemy(enemy);
-        doTurnAndCheckAntOn(4,3);
+        doTurnAndCheckAntOn(4, 3);
         moveEnemy(Aim.NORTH);
-        doTurnAndCheckAntOn(4,3);
+        doTurnAndCheckAntOn(4, 3);
         moveEnemy(Aim.EAST);
         moveEnemy(Aim.EAST);
         moveEnemy(Aim.EAST);
-        doTurnAndCheckAntOn(5,2);
+        doTurnAndCheckAntOn(5, 2);
         moveEnemy(Aim.NORTH);
         moveEnemy(Aim.NORTH);
-        doTurnAndCheckAntOn(3,4);
+        doTurnAndCheckAntOn(3, 4);
 
         //and now we need to return back as there is no enemy. I expect
         //to have 2 turns for it
@@ -133,6 +119,34 @@ public class HillDefendingTest {
         ants.assertOurAnt(4, 4);
         ants.assertOurAnt(2, 4);
         ants.assertOurAnt(2, 2);
+    }
+
+    @Test
+    public void shallGuardBothHills() throws IOException {
+        prepare("tests/logic/defence6.map");
+        game.addHill(SECOND_CENTER);
+        game.turn();
+        ants.assertNoMoOrders();
+        game.followAnt(SECOND_CENTER);
+        game.turn();
+        ants.assertOrder(SECOND_CENTER, Aim.NORTH);
+        game.turn();
+        ants.assertOrder(ants.getTile(SECOND_CENTER, Aim.NORTH), Aim.WEST);
+        game.followAnt(SECOND_CENTER);
+        game.turn();
+        game.followAnt(SECOND_CENTER);
+        game.turn();
+        game.followAnt(SECOND_CENTER);
+        game.turn();
+        game.turn();
+        game.turn();
+        game.turn();
+        ants.assertOurAnt(8, 8);
+        ants.assertOurAnt(8, 10);
+        ants.assertOurAnt(10, 8);
+        ants.assertOurAnt(10, 10);
+        ants.logTraversingMap();
+
     }
 
     private void doTurnAndCheckAntOn(int row, int col) {

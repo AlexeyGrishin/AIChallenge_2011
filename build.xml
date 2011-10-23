@@ -68,13 +68,27 @@
     <target name="run walk7 2 ours 5 hunters">
         <exec dir="tools" executable="cmd" searchpath="tools">
             <arg value="/c"/>
-            <arg path="tools/do-play.cmd"/>
+            <arg path="tools/do-play-without-ui.cmd"/>
             <arg path="tools/maps/real/random_walk_07p_02.map"/>
             <arg value="java -classpath ./my/last.jar MyBot"/>
             <arg value="java -classpath ./my/Brain1.jar MyBot"/>
             <!--arg value="python sample_bots\python\HunterBot.py"/-->
             <arg value="python sample_bots\python\HunterBot.py"/>
             <arg value="python sample_bots\python\HunterBot.py"/>
+            <arg value="python sample_bots\python\HunterBot.py"/>
+            <arg value="python sample_bots\python\HunterBot.py"/>
+            <arg value="python sample_bots\python\HunterBot.py"/>
+        </exec>
+    </target>
+
+    <target name="run maze5 2 ours 3 hunters - 2 hills!">
+        <exec dir="tools" executable="cmd" searchpath="tools">
+            <arg value="/c"/>
+            <arg path="tools/do-play-without-ui.cmd"/>
+            <arg path="tools/maps/real/maze_05p_01.map"/>
+            <arg value="java -classpath ./my/last.jar MyBot"/>
+            <arg value="java -classpath ./my/Brain1.jar MyBot"/>
+            <!--arg value="python sample_bots\python\HunterBot.py"/-->
             <arg value="python sample_bots\python\HunterBot.py"/>
             <arg value="python sample_bots\python\HunterBot.py"/>
             <arg value="python sample_bots\python\HunterBot.py"/>

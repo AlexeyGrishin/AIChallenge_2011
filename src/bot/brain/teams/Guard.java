@@ -27,14 +27,25 @@ public class Guard extends BaseTeam {
         initPossiblePositions();
     }
 
-    private String[] map = new String[] {
+    /*private String[] map = new String[] {
             "  j g  ",
-            " ea ck ",
             "       ",
-            " ld bf ",
+            "e a c k",
+            "       ",
+            "l d b f",
+            "       ",
             "  h i  "
+    };*/
+    private String[] map = new String[] {
+            "       ",
+            "       ",
+            "  a c  ",
+            "       ",
+            "  d b  ",
+            "       ",
+            "       "
     };
-    private static final int XCENTER = 3, YCENTER = 2, OVERALLCOUNT = 12;
+    private static final int XCENTER = 3, YCENTER = 3, OVERALLCOUNT = 4;
 
     private void initPossiblePositions() {
         Tile[] tiles = new Tile[OVERALLCOUNT];
@@ -42,7 +53,7 @@ public class Guard extends BaseTeam {
             for (int col = 0; col < map[row].length(); col++) {
                 char c = map[row].charAt(col);
                 if (c != ' ') {
-                    tiles[c - 'a'] = new Tile(ourHill.getRow() + row - YCENTER, ourHill.getCol() + col - XCENTER);
+                    tiles[c - 'a'] = getField().normalize(ourHill.getRow() + row - YCENTER, ourHill.getCol() + col - XCENTER);
                 }
             }
         }
@@ -92,6 +103,6 @@ public class Guard extends BaseTeam {
 
 
     public boolean isNear(Ant ant) {
-        return getField().getDistance(ant.getPosition(), ourHill) <= 1;
+        return getField().getDistance(ant.getPosition(), ourHill) <= 2;
     }
 }

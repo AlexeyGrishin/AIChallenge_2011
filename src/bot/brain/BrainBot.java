@@ -3,9 +3,7 @@ package bot.brain;
 import bot.*;
 import bot.brain.teams.Guard;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 public class BrainBot extends Bot {
 
@@ -122,16 +120,28 @@ public class BrainBot extends Bot {
         if (!ants1.getEnemyHills().isEmpty()) {
             Tile hill = ants1.getEnemyHills().iterator().next();
             int newRushers = strategy.getCountOfRushers(ants);
+            final List<Ant> canAttackTheHill = new ArrayList<Ant>();
+            final List<Integer> distances = new ArrayList<Integer>();
             for (Ant ant: ants) {
                 if (newRushers > 0 && !ant.isHarvesting()) {
-                    ant.doAttackTheHill(hill);
-                    newRushers--;
+                    canAttackTheHill.add(ant);
+                    distances.add(ants1.getDistance(ant.getPosition(), hill));
                 }
                 if (newRushers < 0 && ant.isRushing()) {
                     ant.done();
                     newRushers++;
                 }
                 if (newRushers == 0) break;
+            }
+            Collections.sort(canAttackTheHill, new Comparator<Ant>() {
+                public int compare(Ant o1, Ant o2) {
+                    return distances.get(canAttackTheHill.indexOf(o1)).compareTo(
+                            distances.get(canAttackTheHill.indexOf(o2))
+                    );
+                }
+            });
+            for (int i = 0; i < canAttackTheHill.size() && i < newRushers; i++) {
+                canAttackTheHill.get(i).doAttackTheHill(hill);
             }
         }
     }
