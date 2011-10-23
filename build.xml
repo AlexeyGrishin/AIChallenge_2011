@@ -1,0 +1,10 @@
+<project name="ololo">
+    <target name="battle">
+        <exec command="cmd /c play.cmd" dir="./tools" />
+    </target>
+
+    <target name="test">
+        <exec command="cmd /c play-alone.cmd" dir="./tools"/>
+    </target>
+
+</project>
