@@ -103,6 +103,6 @@ public class Guard extends BaseTeam {
 
 
     public boolean isNear(Ant ant) {
-        return getField().getDistance(ant.getPosition(), ourHill) <= 2;
+        return getField().getDistance(ant.getPosition(), ourHill) <= 9;
     }
 }

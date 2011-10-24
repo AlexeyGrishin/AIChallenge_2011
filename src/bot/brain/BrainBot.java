@@ -2,6 +2,8 @@ package bot.brain;
 
 import bot.*;
 import bot.brain.teams.Guard;
+import pathfinder.AntsHelper;
+import pathfinder.PathFinder;
 
 import java.util.*;
 
@@ -9,6 +11,7 @@ public class BrainBot extends Bot {
 
 
     private static final int ME = 0;
+    private static final int AUTO_RUSH_DISTANCE = 9;
     private Strategy strategy;
     private boolean firstRun = true;
     private List<Guard> guards = new ArrayList<Guard>();
@@ -29,16 +32,24 @@ public class BrainBot extends Bot {
 
     @Override
     public void afterUpdate() {
-        for (Ant ant: oldAnts) {
-            ant.die();
-        }
-        if (firstRun) {
-            for (Tile hill: getAnts().getMyHills()) {
-                Guard guard = new Guard(hill);
-                guards.add(guard);
-                guard.setField(getAnts());
+        try {
+            for (Ant ant: oldAnts) {
+                ant.die();
             }
-            firstRun = false;
+            if (firstRun) {
+                for (Tile hill: getAnts().getMyHills()) {
+                    Guard guard = new Guard(hill);
+                    guards.add(guard);
+                    guard.setField(getAnts());
+                }
+                firstRun = false;
+            }
+        }
+        catch (Throwable e) {
+            getAnts().log("Exception in afterUpdate: " + e.toString());
+            for (StackTraceElement el: e.getStackTrace()) {
+                getAnts().log("    " + el.toString());
+            }
         }
     }
 
@@ -89,15 +100,20 @@ public class BrainBot extends Bot {
             guardCount += g.getCount();
         }
         int newCount = strategy.getCountOfGuards(ants) - guardCount;
+        getAnts().log("Count of ants: " + ants.size() + ", count of guards right now: " + guardCount + ", count of new guards: " + newCount);
         if (newCount > 0) {
-            for (Ant ant: justBorn) {
+            int assignedCount = 0;
+            for (Ant ant: ants) {
                 for (Guard guard: guards) {
-                    boolean shallAssign = guards.size() == 1 || guard.isNear(ant);
+                    boolean shallAssign = guard.isNear(ant);
                     if (guard.isRequired() && guard.isHillAlive() && shallAssign) {
+                        getAnts().log("New guard: " + ant);
                         guard.assign(ant);
+                        assignedCount++;
                         break;
                     }
                 }
+                if (assignedCount >= newCount) break;
             }
         }
         for (Guard g: guards) {
@@ -110,22 +126,51 @@ public class BrainBot extends Bot {
         for (Tile hill: new ArrayList<Tile>(ants.getEnemyHills())) {
             if (ants.getIlk(hill) == Ilk.MY_ANT) {
                 ants.removeEnemyHill(hill);
+                reachableEnemyHills.remove(hill);
             }
         }
     }
 
+    private Set<Tile> reachableEnemyHills = new HashSet<Tile>();
+
+    private void updateReachableEnemyHills() {
+        Set<Tile> stillUnreachedEnemyHills = new HashSet<Tile>(getAnts().getEnemyHills());
+        stillUnreachedEnemyHills.removeAll(reachableEnemyHills);
+        for (Tile hill: stillUnreachedEnemyHills) {
+            for (Ant ant: ants) {
+                if (ant.see(hill)) {
+                    if (getAnts().canReach(ant, hill)) {
+                        reachableEnemyHills.add(hill);
+                        getAnts().log("Found reachable hill: " + hill);
+                        break;
+                    }
+                }
+            }
+        }
+        stillUnreachedEnemyHills.removeAll(reachableEnemyHills);
+        if (!stillUnreachedEnemyHills.isEmpty())
+            getAnts().log("The following hills were found, but not reachable: " + stillUnreachedEnemyHills);
+    }
+
+
+
     private void rushTheHill(List<Ant> ants) {
         //TODO: it does not know when the hill is destroyed
+        updateReachableEnemyHills();
         Ants ants1 = getAnts();
-        if (!ants1.getEnemyHills().isEmpty()) {
-            Tile hill = ants1.getEnemyHills().iterator().next();
+        if (!reachableEnemyHills.isEmpty()) {
+            Tile hill = reachableEnemyHills.iterator().next();
             int newRushers = strategy.getCountOfRushers(ants);
             final List<Ant> canAttackTheHill = new ArrayList<Ant>();
             final List<Integer> distances = new ArrayList<Integer>();
             for (Ant ant: ants) {
+                int distance = ants1.getDistance(ant.getPosition(), hill);
                 if (newRushers > 0 && !ant.isHarvesting()) {
                     canAttackTheHill.add(ant);
-                    distances.add(ants1.getDistance(ant.getPosition(), hill));
+                    distances.add(distance);
+                }
+                if (newRushers == 0 && distance <= AUTO_RUSH_DISTANCE) {
+                    ant.doAttackTheHill(hill);
                 }
                 if (newRushers < 0 && ant.isRushing()) {
                     ant.done();
@@ -133,6 +178,7 @@ public class BrainBot extends Bot {
                 }
                 if (newRushers == 0) break;
             }
+
             Collections.sort(canAttackTheHill, new Comparator<Ant>() {
                 public int compare(Ant o1, Ant o2) {
                     return distances.get(canAttackTheHill.indexOf(o1)).compareTo(
@@ -140,8 +186,15 @@ public class BrainBot extends Bot {
                     );
                 }
             });
+            int failuresCount = 0;
             for (int i = 0; i < canAttackTheHill.size() && i < newRushers; i++) {
-                canAttackTheHill.get(i).doAttackTheHill(hill);
+                if (!canAttackTheHill.get(i).doAttackTheHill(hill)) {
+                    failuresCount++;
+                }
+            }
+            if (failuresCount > 10) {
+                ants1.log("Seems like hill at " + hill + " is not reachable yet =(");
+                reachableEnemyHills.remove(hill);
             }
         }
     }
@@ -151,11 +204,12 @@ public class BrainBot extends Bot {
             if (ant.isBusy()) continue;
             Tile position = ant.getPosition();
             int dx = 0, dy = 0;
+            int distance = new Random().nextInt(10) + 3;
             switch (Aim.values()[new Random().nextInt(4)]) {
-                case NORTH: dy = +10; break;
-                case EAST: dx = +10; break;
-                case WEST: dx = -10; break;
-                case SOUTH: dy = -10; break;
+                case NORTH: dy = +distance; break;
+                case EAST: dx = +distance; break;
+                case WEST: dx = -distance; break;
+                case SOUTH: dy = -distance; break;
             }
             Tile tile = getAnts().normalize(position.getRow() + dy, position.getCol() + dx);
             ant.goAndSeeAround(tile);

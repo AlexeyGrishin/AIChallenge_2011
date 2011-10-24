@@ -1,15 +1,14 @@
 package bot;
 
+import bot.brain.Ant;
 import bot.brain.Order;
+import pathfinder.AntsHelper;
+import pathfinder.PathFinder;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Holds all game data and current game state.
@@ -17,7 +16,8 @@ import java.util.Set;
 public class Ants {
     /** Maximum map size. */
     public static final int MAX_MAP_SIZE = 256;
-    
+    private static final String LOG_PATH = "Q:\\Programming\\Java2\\Projects\\AIBot\\log1.txt";
+
     private final int loadTime;
     
     private final int turnTime;
@@ -49,7 +49,9 @@ public class Ants {
     private final Set<Tile> foodTiles = new HashSet<Tile>();
     
     private final Set<Order> orders = new HashSet<Order>();
-    
+    private static final int PI_ROUNDED = 4;
+    private int viewArea;
+
     /**
      * Creates new {@link Ants} object.
      * 
@@ -70,6 +72,7 @@ public class Ants {
         this.cols = cols;
         this.turns = turns;
         this.viewRadius2 = viewRadius2;
+        this.viewArea = viewRadius2 * PI_ROUNDED;
         this.attackRadius2 = attackRadius2;
         this.spawnRadius2 = spawnRadius2;
         map = new Ilk[rows][cols];
@@ -412,10 +415,10 @@ public class Ants {
     FileWriter log = null;
 
     protected void createLog() {
-        File fileLog = new File("log.txt");
+        File fileLog = new File(LOG_PATH);
         if (!fileLog.exists()) return;
         try {
-            log = new FileWriter("log.txt", false);
+            log = new FileWriter(LOG_PATH, false);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -441,5 +444,19 @@ public class Ants {
 
     public void removeEnemyHill(Tile hill) {
         this.enemyHills.remove(hill);
+    }
+
+
+    public boolean canReach(Ant ant, Tile hill) {
+        PathFinder<Tile> pf = new PathFinder<Tile>(new AntsHelper(this), ant.getPosition(), hill);
+        pf.setNotFoundStrategy(pf.limited(getViewArea(), pf.RETURN_EMPTY));
+        pf.findPath();
+        List<PathFinder<Tile>.PathElement<Tile>> foundPath = new ArrayList<PathFinder<bot.Tile>.PathElement<Tile>>(pf.getFoundPath());
+        if (foundPath.isEmpty()) return false;
+        return foundPath.get(foundPath.size()-1).to.equals(hill);
+    }
+
+    public int getViewArea() {
+        return viewArea;
     }
 }

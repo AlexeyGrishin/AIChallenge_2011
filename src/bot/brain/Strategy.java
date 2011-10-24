@@ -23,16 +23,17 @@ public class Strategy {
                 lazy++;
             }
         }
-        if (overall < 20) {
+        if (overall < 30) {
             return -rushers;
         }
         else {
             return Math.max(ants.size() / 2 - rushers, 0);
+            //return Math.max(20 - rushers, 0);
         }
     }
 
     public int getCountOfGuards(List<Ant> ants) {
-        int countOfTens = ants.size() / 10;
+        int countOfTens = ants.size() / 12;
         return countOfTens == 1 ? 2 : countOfTens;
     }
 }

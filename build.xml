@@ -81,7 +81,7 @@
         </exec>
     </target>
 
-    <target name="run maze5 2 ours 3 hunters - 2 hills!">
+    <target name="run maze5 2 ours 3 hunters - 5 hills!">
         <exec dir="tools" executable="cmd" searchpath="tools">
             <arg value="/c"/>
             <arg path="tools/do-play-without-ui.cmd"/>

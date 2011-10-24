@@ -2,9 +2,7 @@ package bot.brain;
 
 import bot.*;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 public class Ant {
 
@@ -95,9 +93,10 @@ public class Ant {
 
     public void die() {
         ants.log(this + " =(");
-        for (AntListener listener:listeners) {
+        for (AntListener listener: listeners) {
             listener.onDie(this);
         }
+        listeners.clear();
     }
     
     public String toString() {
@@ -113,8 +112,20 @@ public class Ant {
         moved = false;
     }
 
-    public void doAttackTheHill(Tile hill) {
+    private Map<Tile, Integer> hillAttacked = new HashMap<Tile, Integer>();
+    private static final int TRIES_LIMIT = 10;
+
+    public boolean doAttackTheHill(Tile hill) {
+        Integer count = hillAttacked.get(hill);
+        if (count == null) count = 1; else count++;
+        if (count > TRIES_LIMIT) {
+            ants.log(this + " tried to attack the hill at " + hill + " " + TRIES_LIMIT + " times, but failed");
+            hillAttacked.put(hill, null);
+            return false;
+        }
+        hillAttacked.put(hill, count);
         addOrderIfFeasible(new AttackHill(ants, this, hill));
+        return isRushing();
     }
 
 

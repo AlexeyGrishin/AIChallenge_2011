@@ -21,7 +21,7 @@ public abstract class MoveOrder implements AntOrder {
 
     protected void findPath() {
         PathFinder<Tile> finder = new PathFinder<Tile>(new AntsHelper(ants), ant.getPosition(), target);
-        finder.setNotFoundStrategy(finder.limited(150, finder.RETURN_PATH_TO_NEAREST));
+        finder.setNotFoundStrategy(finder.limited(ants.getViewArea(), finder.RETURN_PATH_TO_NEAREST));
         finder.findPath();
         this.path = new LinkedList<PathFinder<Tile>.PathElement<Tile>>(finder.getFoundPath());
         if (finder.getObservedCells() > 20) {

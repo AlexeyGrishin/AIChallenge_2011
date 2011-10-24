@@ -34,8 +34,10 @@ public abstract class BaseTeam implements Team, AntListener {
     }
 
     public void assign(Ant ant) {
-        if (!managedAnts.contains(ant))
+        if (!managedAnts.contains(ant)) {
             managedAnts.add(ant);
+            ant.addListener(this);
+        }
     }
 
     public int getCount() {
@@ -45,7 +47,9 @@ public abstract class BaseTeam implements Team, AntListener {
     public void detach(int targetCount, List<Ant> detachedAnts) {
         //may be overriden
         while (managedAnts.size() > targetCount) {
-            detachedAnts.add(managedAnts.get(0));
+            Ant removed = managedAnts.remove(0);
+            removed.removeListener(this);
+            detachedAnts.add(removed);
         }
     }
 }

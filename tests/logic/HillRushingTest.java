@@ -36,6 +36,7 @@ public class HillRushingTest {
         bot.setAnts(ants);
         bot.beforeUpdate();
         bot.addAnt(10, 102, 0);
+        bot.addAnt(106, 39, 0);
         target = new Tile(106, 37);
         bot.addHill(target.getRow(), target.getCol(), 1);
         assertEquals(Ilk.LAND, ants.getIlk(target));
@@ -88,7 +89,46 @@ public class HillRushingTest {
         assertTrue(secondRusher.isRushing());
         assertFalse(firstHarvester.isRushing());
         assertFalse(secondHarvester.isRushing());
+    }
 
+    @Test
+    public void rushTheHill_ignoreUnreachable() throws IOException {
+        Strategy strategy = mock(Strategy.class);
+        when(strategy.getCountOfRushers(Matchers.<List<Ant>>any())).thenReturn(2);
+        bot = new BrainBot(strategy);
+        ants = new MockAnts("tests/logic/hill3.map");
+        bot.setAnts(ants);
+        GameMock mock = new GameMock(bot, ants);
+        mock.addEnemyHill(new Tile(7, 23));
+        mock.update();
+        List<Ant> listOfAnts = bot.getTheAnts();
+        Ant firstRusher = getAntOn(listOfAnts, 7, 20);
+        mock.doTurn();
+        assertFalse(firstRusher.isRushing());
+
+        Tile nearCoridor = new Tile(19, 22);
+        mock.followAnt(nearCoridor);
+        mock.doTurn();
+        assertTrue(firstRusher.isRushing());
+
+    }
+
+    @Test
+    public void rushTheHill_ifNearEventThereShallBeNotRushers() throws IOException {
+        Strategy strategy = mock(Strategy.class);
+        when(strategy.getCountOfRushers(Matchers.<List<Ant>>any())).thenReturn(0);
+        bot = new BrainBot(strategy);
+        ants = new MockAnts("tests/logic/hill4.map");
+        bot.setAnts(ants);
+        GameMock mock = new GameMock(bot, ants);
+        mock.addEnemyHill(new Tile(0, 0));
+        mock.update();
+        List<Ant> listOfAnts = bot.getTheAnts();
+        Ant firstRusher = getAntOn(listOfAnts, 0, 3);
+        mock.doTurn();
+        assertTrue(firstRusher.isRushing());
+        mock.doTurn();
+        assertTrue(firstRusher.isRushing());
     }
 
     private Ant getAntOn(List<Ant> listOfAnts, int row, int col) {
