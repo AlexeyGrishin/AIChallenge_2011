@@ -14,7 +14,10 @@ public abstract class Bot extends AbstractSystemInputParser {
             int attackRadius2, int spawnRadius2) {
         setAnts(new Ants(loadTime, turnTime, rows, cols, turns, viewRadius2, attackRadius2,
             spawnRadius2));
+        ants.setLogPath(getLogPath());
     }
+
+    protected abstract String getLogPath();
 
     /**
      * Returns game state information.

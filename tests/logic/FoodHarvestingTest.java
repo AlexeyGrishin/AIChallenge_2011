@@ -1,5 +1,6 @@
 package logic;
 
+import bot.Aim;
 import bot.Bot;
 import bot.brain.BrainBot;
 import bot.Tile;
@@ -53,6 +54,61 @@ public class FoodHarvestingTest {
 
         assertFalse(bot.getTheAnts().get(0).isHarvesting());
 
+    }
+
+    @Test
+    public void shallGoDirectlyToFood() throws IOException {
+        ants = new MockAnts("tests/logic/harvest2.map");
+        bot = new BrainBot(new Strategy());
+        bot.setAnts(ants);
+
+        GameMock mock = new GameMock(bot, ants);
+        Tile ant = ants.getMyAnts().iterator().next();
+        for (int i = 0; i < 6; i++) {
+            mock.turn();
+            ants.assertOrder(ant, Aim.EAST);
+            ant = ants.getTile(ant, Aim.EAST);
+        }
+
+        ants.logTraversingMap();
+
+        ants.assertOurAnt(5, 14);
+
+    }
+
+    @Test
+    public void shallSelectNearestForAll() throws IOException {
+        ants = new MockAnts("tests/logic/harvest3.map");
+        bot = new BrainBot(new Strategy());
+        bot.setAnts(ants);
+
+        GameMock mock = new GameMock(bot, ants);
+        for (int i = 0; i < 3; i++) {
+            mock.turn();
+        }
+        ants.logTraversingMap();
+
+        ants.assertOurAnt(2, 9);
+        ants.assertOurAnt(3, 10);
+    }
+
+    @Test
+    public void shallSelectNearest() throws IOException {
+        ants = new MockAnts(10, 10);
+        bot = new BrainBot(new Strategy());
+        bot.setAnts(ants);
+        bot.addAnt(5,5,0);
+        bot.addFood(0,0);
+        bot.addFood(1,1);
+        bot.addFood(6,6);
+
+        GameMock mock = new GameMock(bot, ants);
+        for (int i = 0; i < 2; i++) {
+            mock.turn();
+        }
+        ants.logTraversingMap();
+
+        ants.assertOurAnt(6, 6);
     }
 
 }

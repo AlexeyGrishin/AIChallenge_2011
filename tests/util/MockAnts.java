@@ -11,9 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class MockAnts extends Ants {
 
@@ -99,7 +97,7 @@ public class MockAnts extends Ants {
     }
 
     @Override
-    protected void createLog() {
+    protected void createLog(String path) {
         //do nothing
     }
 
@@ -127,5 +125,9 @@ public class MockAnts extends Ants {
 
     public void assertOurAnt(int row, int col) {
         assertEquals(Ilk.MY_ANT, getIlk(new Tile(row, col)));
+    }
+
+    public void assertNoEnemyAnt(Tile tile) {
+        assertNotSame(Ilk.ENEMY_ANT, getIlk(tile));
     }
 }

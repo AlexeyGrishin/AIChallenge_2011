@@ -51,5 +51,6 @@ public abstract class BaseTeam implements Team, AntListener {
             removed.removeListener(this);
             detachedAnts.add(removed);
         }
+        field.log("Reduce count of group " + this.getClass().getSimpleName() + " to " + targetCount + ": detached " + detachedAnts);
     }
 }

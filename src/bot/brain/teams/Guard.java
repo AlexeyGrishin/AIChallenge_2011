@@ -4,10 +4,9 @@ import bot.Ants;
 import bot.Tile;
 import bot.brain.Ant;
 import bot.brain.Group;
-import pathfinder.AntsHelper;
-import pathfinder.PathFinder;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 public class Guard extends BaseTeam {
@@ -70,14 +69,44 @@ public class Guard extends BaseTeam {
         }
     }
 
+    private final static int ALARM_TIME = 10;
+    private int enemiesDetectedUsTurnsAgo = ALARM_TIME;
+
     public void doTurn() {
-        List<Tile> enemies = group.findEnemiesInGroupVision(getAnts());
+        checkDetection();
+        Collection<Tile> enemies = group.findEnemiesInGroupVision(getAnts());
         if (!enemies.isEmpty()) {
             group.turnToEnemies(getAnts(), enemies);
         }
         else {
+            if (!isHillInDanger()) {
+                getField().log("Guard: hill " + ourHill + " is no more under danger");
+            }
+            if (getCount() > possiblePositions.size()) {
+                detach(possiblePositions.size(), new ArrayList<Ant>());
+            }
             group.backToPositions(getAnts(), limitPositions(getCount()));
         }
+    }
+
+    private void checkDetection() {
+        for (Tile enemy: getField().getEnemyAnts()) {
+            if (getField().getDistance(enemy, ourHill) <= getField().getViewRadius2()) {
+                getField().log("Guard: enemies around hill " + ourHill);
+                enemiesDetectedUsTurnsAgo = 0;
+                return;
+            }
+        }
+        enemiesDetectedUsTurnsAgo++;
+
+    }
+
+    public boolean isHillInDanger() {
+        return enemiesDetectedUsTurnsAgo < ALARM_TIME;
+    }
+
+    public boolean isHillInDangerRightNow() {
+        return enemiesDetectedUsTurnsAgo < 1;
     }
 
     @Override
@@ -94,7 +123,7 @@ public class Guard extends BaseTeam {
     }
 
     public boolean isRequired() {
-        return getCount() < possiblePositions.size();
+        return isHillInDangerRightNow() || getCount() < possiblePositions.size();
     }
 
     public boolean isHillAlive() {

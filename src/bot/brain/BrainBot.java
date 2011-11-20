@@ -6,6 +6,7 @@ import pathfinder.AntsHelper;
 import pathfinder.PathFinder;
 
 import java.util.*;
+import java.util.concurrent.TimeoutException;
 
 public class BrainBot extends Bot {
 
@@ -16,9 +17,22 @@ public class BrainBot extends Bot {
     private boolean firstRun = true;
     private List<Guard> guards = new ArrayList<Guard>();
     private List<Ant> justBorn = new ArrayList<Ant>();
+    private TimeGuard guard;
+    private String logPath;
+
+    public BrainBot(Strategy strategy, String logPath) {
+        this.strategy = strategy;
+        this.logPath = logPath;
+    }
 
     public BrainBot(Strategy strategy) {
         this.strategy = strategy;
+        this.logPath = null;
+    }
+
+    @Override
+    protected String getLogPath() {
+        return logPath;
     }
 
     @Override
@@ -63,29 +77,39 @@ public class BrainBot extends Bot {
     public void doTurn() {
         try {
             Ants ants = getAnts();
-            ants.log("-> Turn");
+            initTimeGuard(ants);
+            ants.log("-> Turn " + ants.getTurn());
+            long ts = System.currentTimeMillis();
             List<Tile> unorderedFood = new ArrayList<Tile>(ants.getFoodTiles());
             for (Ant ant: this.ants) {
                 ant.onNewTurn();
                 ant.update();   //do a step for each
             }
             removeCrushedHills(ants);
-
             //then observe those who are not busy and assign orders
+            ts = logTiming(ts, "Update1");
             List<Ant> freeAnts = new ArrayList<Ant>(this.ants);
             guardOurHill(freeAnts);
+            ts = logTiming(ts, "Guard");
             rushTheHill(freeAnts);
+            ts = logTiming(ts, "Rush");
             harvestFood(freeAnts, unorderedFood);
+            ts = logTiming(ts, "Harvest");
             inspectNewArea(freeAnts);
+            ts = logTiming(ts, "New area");
 
             //and update those of them who did not performed an action before
             for (Ant ant: this.ants) {
                 ant.update();   //do a step for each
             }
+            ts = logTiming(ts, "Update2");
             if (ants.getTimeRemaining() < ants.getTurnTime() / 2) {
                 ants.log("WARNING: only " + ants.getTimeRemaining() + " remains from " + ants.getTurnTime());
             }
         }
+        //catch (TimeoutException e) {
+        //    getAnts().log("Problem: timeout =(");
+        //}
         catch (Throwable e) {
             getAnts().log("Exception: " + e.toString());
             for (StackTraceElement el: e.getStackTrace()) {
@@ -94,13 +118,23 @@ public class BrainBot extends Bot {
         }
     }
 
+    private void initTimeGuard(Ants ants) {
+        if (guard == null) {
+            guard = new TimeGuard(ants);
+        }
+    }
+
     private void guardOurHill(List<Ant> ants) {
         int guardCount = 0;
+        int hillsInDanger = 0;
         for (Guard g: guards) {
             guardCount += g.getCount();
+            if (g.isHillInDanger()) {
+                hillsInDanger +=1;
+            }
         }
-        int newCount = strategy.getCountOfGuards(ants) - guardCount;
-        getAnts().log("Count of ants: " + ants.size() + ", count of guards right now: " + guardCount + ", count of new guards: " + newCount);
+        int newCount = strategy.getCountOfGuards(ants, hillsInDanger) - guardCount;
+        getAnts().log("Count of ants: " + ants.size() + ", count of guards right now: " + guardCount + ", count of new guards: " + newCount + ", count of hills in danger: " + hillsInDanger);
         if (newCount > 0) {
             int assignedCount = 0;
             for (Ant ant: ants) {
@@ -217,7 +251,69 @@ public class BrainBot extends Bot {
 
     }
 
+    //for tests only. Do not use it in game!
+    public boolean isGuard(Ant ant) {
+        List<Ant> ants = new ArrayList<Ant>(this.ants);
+        for (Guard g: guards) {
+            g.removeManagedFrom(ants);
+        }
+        return !ants.contains(ant);
+    }
+
+    class AntFoodDistance implements Comparable<AntFoodDistance> {
+        Ant ant;
+        List<Tile> food = new ArrayList<Tile>(6);
+        List<Integer> distances = new ArrayList<Integer>(6);
+        int maxDistance = 0;
+        int minDistance = 9999999;
+
+        AntFoodDistance(Ant ant) {
+            this.ant = ant;
+        }
+
+        void registerFood(Tile food) {
+            int distance = ant.getDistanceToVisibleObject(food);
+            if (distance >= 0) {
+                this.food.add(food);
+                this.distances.add(distance);
+                if (distance > maxDistance) {
+                    maxDistance = distance;
+                }
+                if (distance < minDistance) {
+                    minDistance = distance;
+                }
+            }
+        }
+
+        void deregisterFood(Tile food) {
+            int index = this.food.indexOf(food);
+            if (index >= 0) {
+                this.food.remove(index);
+                int distance = this.distances.remove(index);
+                if (!this.distances.isEmpty() && distance == minDistance) {
+                    minDistance = Collections.min(distances);
+                }
+            }
+        }
+
+        public int compareTo(AntFoodDistance o) {
+            return o.maxDistance - maxDistance;
+        }
+
+        Tile issueOrder() {
+            if (!this.food.isEmpty()) {
+                int index = distances.indexOf(minDistance);
+                Tile tile = food.get(index);
+                if (ant.harvestFood(tile)) {
+                    return tile;
+                }
+            }
+            return null;
+        }
+    }
+
     private void harvestFood(List<Ant> ants, List<Tile> unorderedFood) {
+        List<AntFoodDistance> distances = new LinkedList<AntFoodDistance>();
         for (Ant ant: ants) {
             if (ant.isRushing()) {
                 //just ignore
@@ -225,12 +321,23 @@ public class BrainBot extends Bot {
                 unorderedFood.remove(ant.getTarget());
             }
             else {
+                AntFoodDistance adf = new AntFoodDistance(ant);
+                distances.add(adf);
                 for (Tile food: unorderedFood) {
-                    if (ant.see(food) && ant.harvestFood(food)) {
-                        unorderedFood.remove(food);
-                        break;
-                    }
+                    adf.registerFood(food);
                 }
+            }
+        }
+        Collections.sort(distances);
+        List<Tile> orderedFood = new ArrayList<Tile>(unorderedFood.size());
+        while (!distances.isEmpty()) {
+            AntFoodDistance d = distances.remove(0);
+            for (Tile food: orderedFood) {
+                d.deregisterFood(food);
+            }
+            Tile markedFood = d.issueOrder();
+            if (markedFood != null) {
+                orderedFood.add(markedFood);
             }
         }
     }

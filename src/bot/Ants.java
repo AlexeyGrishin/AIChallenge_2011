@@ -3,6 +3,7 @@ package bot;
 import bot.brain.Ant;
 import bot.brain.Order;
 import pathfinder.AntsHelper;
+import pathfinder.MathCache;
 import pathfinder.PathFinder;
 
 import java.io.File;
@@ -16,7 +17,7 @@ import java.util.*;
 public class Ants {
     /** Maximum map size. */
     public static final int MAX_MAP_SIZE = 256;
-    private static final String LOG_PATH = "Q:\\Programming\\Java2\\Projects\\AIBot\\log1.txt";
+    private static final String LOG_PATH = "Q:\\Programming\\Java2\\Projects\\AIBot";
 
     private final int loadTime;
     
@@ -51,6 +52,7 @@ public class Ants {
     private final Set<Order> orders = new HashSet<Order>();
     private static final int PI_ROUNDED = 4;
     private int viewArea;
+    private int turn = 0;
 
     /**
      * Creates new {@link Ants} object.
@@ -74,12 +76,12 @@ public class Ants {
         this.viewRadius2 = viewRadius2;
         this.viewArea = viewRadius2 * PI_ROUNDED;
         this.attackRadius2 = attackRadius2;
+        attackRadius = (int)MathCache.sqrt(attackRadius2);
         this.spawnRadius2 = spawnRadius2;
         map = new Ilk[rows][cols];
         for (Ilk[] row : map) {
             Arrays.fill(row, Ilk.LAND);
         }
-        createLog();
     }
 
 
@@ -91,7 +93,11 @@ public class Ants {
     public int getLoadTime() {
         return loadTime;
     }
-    
+
+    public int getTurn() {
+        return turn;
+    }
+
     /**
      * Returns timeout for a single game turn, starting with turn 1.
      * 
@@ -145,7 +151,13 @@ public class Ants {
     public int getAttackRadius2() {
         return attackRadius2;
     }
-    
+
+    int attackRadius;
+
+    public int getAttackRadius() {
+        return attackRadius;
+    }
+
     /**
      * Returns squared spawn radius of each ant.
      * 
@@ -162,6 +174,7 @@ public class Ants {
      */
     public void setTurnStartTime(long turnStartTime) {
         this.turnStartTime = turnStartTime;
+        this.turn++;
     }
     
     /**
@@ -409,27 +422,31 @@ public class Ants {
         System.out.println(order);
         System.out.flush();
         update(Ilk.LAND, myAnt);
+        myAnts.remove(myAnt);
         update(Ilk.MY_ANT, getTile(myAnt, direction));
     }
 
     FileWriter log = null;
 
-    protected void createLog() {
-        File fileLog = new File(LOG_PATH);
-        if (!fileLog.exists()) return;
+    protected void createLog(String logPath) {
+        File logFolder = new File(logPath);
+        System.err.println("Going to create log in: " + logPath);
         try {
-            log = new FileWriter(LOG_PATH, false);
-        } catch (IOException e) {
+            File file = new File(logFolder, System.currentTimeMillis() + ".log");
+            log = new FileWriter(file, false);
+        } catch (Throwable e) {
             e.printStackTrace();
         }
     }
 
     public void log(String string) {
+        //System.err.println(string);
         if (log == null) return;
         try {
             log.write(string + "\n");
             log.flush();
         } catch (IOException e) {
+            System.err.println("Cannot write log");
             //ignore
         }
     }
@@ -451,12 +468,21 @@ public class Ants {
         PathFinder<Tile> pf = new PathFinder<Tile>(new AntsHelper(this), ant.getPosition(), hill);
         pf.setNotFoundStrategy(pf.limited(getViewArea(), pf.RETURN_EMPTY));
         pf.findPath();
-        List<PathFinder<Tile>.PathElement<Tile>> foundPath = new ArrayList<PathFinder<bot.Tile>.PathElement<Tile>>(pf.getFoundPath());
+        List<PathFinder.PathElement<Tile>> foundPath = new ArrayList<PathFinder.PathElement<Tile>>(pf.getFoundPath());
         if (foundPath.isEmpty()) return false;
         return foundPath.get(foundPath.size()-1).to.equals(hill);
     }
 
     public int getViewArea() {
         return viewArea;
+    }
+
+    public void setLogPath(String logPath) {
+        if (logPath != null) {
+            createLog(logPath);
+        }
+        else {
+            //createLog(LOG_PATH);
+        }
     }
 }

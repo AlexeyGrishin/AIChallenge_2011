@@ -92,7 +92,7 @@ public class Group {
         }
     }
 
-    public void turnToEnemies(List<Ant> ants, List<Tile> enemies) {
+    public void turnToEnemies(List<Ant> ants, Collection<Tile> enemies) {
         if (ants.isEmpty()) return;
         //2. find distances to enemies from any ant from group
         List<List<EnemyVision>> enemyVisions = getEnemyVisions(enemies, ants);
@@ -118,13 +118,13 @@ public class Group {
             for (int i = 0; i < movements.size() && moved < 2; i++) {
                 BestMovement bestMovement = movements.get(i);
                 bestMovement.doMovement();
-                nonMovedAnts.add(bestMovement.ant);
+                nonMovedAnts.remove(bestMovement.ant);
                 moved++;
             }
         }
     }
 
-    private List<List<EnemyVision>> getEnemyVisions(List<Tile> enemies, List<Ant> ants) {
+    private List<List<EnemyVision>> getEnemyVisions(Collection<Tile> enemies, List<Ant> ants) {
         List<List<EnemyVision>> visions = new ArrayList<List<EnemyVision>>();
         for (Tile enemy: enemies) {
             List<EnemyVision> enemyVision = new ArrayList<EnemyVision>();
@@ -149,15 +149,18 @@ public class Group {
         return visions;
     }
 
-    public List<Tile> findEnemiesInGroupVision(List<Ant> ants) {
-        List<Tile> enemies = new ArrayList<Tile>();
-        for (Tile enemy: field.getEnemyAnts()) {
+    public Collection<Tile> findEnemiesInGroupVision(List<Ant> ants) {
+        Set<Tile> enemies = new HashSet<Tile>();
+        /*for (Tile enemy: field.getEnemyAnts()) {
             for (Ant ant: ants) {
                 if (ant.see(enemy)) {
                     enemies.add(enemy);
                     break;
                 }
             }
+        } */
+        for (Ant ant: ants) {
+            enemies.addAll(ant.getVisibleEnemies());
         }
         return enemies;
     }

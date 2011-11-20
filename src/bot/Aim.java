@@ -77,4 +77,14 @@ public enum Aim {
     public static Aim fromSymbol(char symbol) {
         return symbolLookup.get(symbol);
     }
+
+    public Aim opposite() {
+        switch (this) {
+            case NORTH: return SOUTH;
+            case SOUTH: return NORTH;
+            case EAST: return WEST;
+            case WEST: return EAST;
+        }
+        return null;
+    }
 }

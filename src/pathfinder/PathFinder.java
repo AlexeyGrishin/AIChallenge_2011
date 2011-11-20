@@ -9,7 +9,7 @@ public class PathFinder<C> {
     private long time = 0;
 
 
-    public class PathElement<C> {
+    public static class PathElement<C> {
         public final C from;
         public final C to;
         public final int fromCost;

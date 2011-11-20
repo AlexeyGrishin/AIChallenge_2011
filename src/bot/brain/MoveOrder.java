@@ -8,7 +8,8 @@ import java.util.LinkedList;
 
 public abstract class MoveOrder implements AntOrder {
     private Tile target;
-    private LinkedList<PathFinder<Tile>.PathElement<Tile>> path = null;
+    private LinkedList<PathFinder.PathElement<Tile>> path = null;
+    private LinkedList<PathFinder.PathElement<Tile>> madePath = new LinkedList<PathFinder.PathElement<Tile>>();
     private Ant ant;
     private Ants ants;
 
@@ -23,7 +24,7 @@ public abstract class MoveOrder implements AntOrder {
         PathFinder<Tile> finder = new PathFinder<Tile>(new AntsHelper(ants), ant.getPosition(), target);
         finder.setNotFoundStrategy(finder.limited(ants.getViewArea(), finder.RETURN_PATH_TO_NEAREST));
         finder.findPath();
-        this.path = new LinkedList<PathFinder<Tile>.PathElement<Tile>>(finder.getFoundPath());
+        this.path = new LinkedList<PathFinder.PathElement<Tile>>(finder.getFoundPath());
         if (finder.getObservedCells() > 20) {
             ants.log(ant + ": observed " + finder.getObservedCells() + " cells for " + finder.getSpentTime() + "ms!");
         }
@@ -42,9 +43,17 @@ public abstract class MoveOrder implements AntOrder {
         }
     }
 
+    protected void removeLastStep() {
+        path.removeLast();
+    }
+
+    protected PathFinder.PathElement<Tile> getLastStep() {
+        return path.isEmpty() ? new PathFinder.PathElement<Tile>(ant.getPosition(), ant.getPosition(), 0, 0) : path.getLast();
+    }
+
     public void step() {
         ants.log(ant + ": " + this + ": still go to " + target + ", " + path.size() + " steps left");
-        PathFinder<Tile>.PathElement<Tile> element = path.removeFirst();
+        PathFinder.PathElement<Tile> element = path.removeFirst();
         if (!element.from.equals(ant.getPosition())) {
             ants.log(ant + ": expected to be in " + element.from + ", but I'm in " + ant.getPosition());
             cancel();
@@ -55,8 +64,19 @@ public abstract class MoveOrder implements AntOrder {
             onMovementImpossible();
             return;
         }
+        madePath.add(element);
         if (isTargetReached() || isDone()) {
             done();
+        }
+    }
+
+    public void stepBack() {
+        if (!madePath.isEmpty()) {
+            PathFinder.PathElement<Tile> lastStep = madePath.removeLast();
+            ant.move(ants.getDirections(lastStep.to, lastStep.from).get(0));
+            ant.setLastDirection(ants.getDirections(lastStep.from, lastStep.to).get(0));
+            path.addFirst(lastStep);
+            ants.log(ant + ": " + this + ": still go to " + target + ", " + path.size() + " steps left, step back");
         }
     }
 
@@ -109,6 +129,14 @@ public abstract class MoveOrder implements AntOrder {
 
     public String toString() {
         return getClass().getSimpleName() + "(" + getTarget() + ")";
+    }
+
+    protected void log(String s) {
+        ants.log(ant + ": " + this + ": " + s);
+    }
+
+    protected Ant getAnt() {
+        return ant;
     }
 
 }

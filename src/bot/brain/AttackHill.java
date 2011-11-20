@@ -8,8 +8,11 @@ import bot.brain.MoveOrder;
 
 public class AttackHill extends MoveOrder {
 
-    protected AttackHill(Ants ants, Ant ant, Tile target) {
+    private View view;
+
+    protected AttackHill(Ants ants, Ant ant, Tile target, View visibleView) {
         super(ants, ant, target);
+        this.view = visibleView;
     }
 
     @Override
@@ -24,6 +27,28 @@ public class AttackHill extends MoveOrder {
         }
     }
 
+    @Override
+    public void step() {
+        if (iWillSurvive()) {
+            super.step();
+        }
+        else {
+            super.stepBack();
+        }
+    }
+
+    private boolean iWillSurvive() {
+        //if (true) return true;
+        Ant ant = getAnt();
+        int friendsCount = ant.getNearestFriendsCount() + 1;// + me
+        int enemiesCount = ant.getSoonAttackableEnemiesCount();
+        log("friendsCount = " + friendsCount + ", enemiesCount = " + enemiesCount);
+        log("friends = " + ant.getNearestFriends() + ", enemies = " + ant.getSoonAttackableEnemies());
+        if (friendsCount >= enemiesCount || ant.isMaxFriendsNear())
+            return true;
+        log("I do not want to die... wait for friends!");
+        return false;
+    }
 
     public boolean isHarvesting() {
         return true;

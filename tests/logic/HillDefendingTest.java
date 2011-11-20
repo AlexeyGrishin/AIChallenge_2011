@@ -13,11 +13,11 @@ import org.mockito.MockitoAnnotations;
 import util.MockAnts;
 
 import java.io.IOException;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyListOf;
+import static org.mockito.Matchers.*;
 import static org.mockito.Mockito.when;
 
 public class HillDefendingTest {
@@ -149,6 +149,39 @@ public class HillDefendingTest {
 
     }
 
+    @Test
+    public void shallReduceCountOfGuardIfNoDanger() throws IOException {
+        prepare("tests/logic/defence7.map");
+        when(strategy.getCountOfGuards(anyListOf(Ant.class), anyInt())).thenReturn(12);
+        game.setEnemy(new Tile(8, 3));
+        game.turn();
+        game.followAnt(new Tile(5, 2));
+        game.followAnt(new Tile(5, 3));
+        game.followAnt(new Tile(5,4));
+        game.turn();
+        Distribution distribution = new Distribution().invoke();
+        assertEquals(7, distribution.getGuarding());
+        assertEquals(0, distribution.getHarvesting());
+        game.removeEnemy(new Tile(8,3));
+        game.turn();
+        distribution = new Distribution().invoke();
+        assertEquals(4, distribution.getGuarding());
+        assertEquals(3, distribution.getHarvesting());
+    }
+
+    @Test
+    public void shallGuardFromRush() throws IOException {
+        prepare("tests/logic/defence8.map");
+        when(strategy.getCountOfGuards(anyListOf(Ant.class), anyInt())).thenReturn(12);
+        for (int i = 0; i < 10; i++) {
+            game.turn();
+            game.moveEnemies(Aim.NORTH);
+            ants.logTraversingMap();
+            game.calculateDeath();
+            ants.assertNoEnemyAnt(CENTER);
+        }
+    }
+
     private void doTurnAndCheckAntOn(int row, int col) {
         game.turn();
         ants.logTraversingMap();
@@ -165,11 +198,37 @@ public class HillDefendingTest {
     private void prepare(String map) throws IOException {
         ants = new MockAnts(map);
         bot = new BrainBot(strategy);
-        when(strategy.getCountOfGuards(anyListOf(Ant.class))).thenReturn(12);
+        when(strategy.getCountOfGuards(anyListOf(Ant.class), eq(0))).thenReturn(12);
         bot.setAnts(ants);
         game = new GameMock(bot, ants);
         game.addHill(CENTER);
     }
 
 
+    private class Distribution {
+        private int harvesting;
+        private int guarding;
+
+        public int getHarvesting() {
+            return harvesting;
+        }
+
+        public int getGuarding() {
+            return guarding;
+        }
+
+        public Distribution invoke() {
+            harvesting = 0;
+            guarding = 0;
+            for (Ant ant: bot.getTheAnts()) {
+                if (bot.isGuard(ant)) {
+                    guarding++;
+                }
+                else {
+                    harvesting++;
+                }
+            }
+            return this;
+        }
+    }
 }

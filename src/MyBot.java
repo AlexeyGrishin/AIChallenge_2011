@@ -13,6 +13,6 @@ public class MyBot {
      * @throws java.io.IOException if an I/O error occurs
      */
     public static void main(String[] args) throws IOException {
-        new BrainBot(new Strategy()).readSystemInput();
+        new BrainBot(new Strategy(), args.length > 0 ? args[0] : null).readSystemInput();
     }
 }
