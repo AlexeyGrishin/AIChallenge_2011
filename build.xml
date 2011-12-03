@@ -11,7 +11,7 @@
     <target name="compile">
         <delete dir="out"/>
         <mkdir dir="out"/>
-        <javac srcdir="src" destdir="out"/>
+        <javac srcdir="src" destdir="out" debug="true"/>
     </target>
 
 
@@ -35,17 +35,31 @@
             <arg value="python sample_bots\python\HunterBot.py"/>
             <arg value="java -classpath ./my/Brain1.2.jar MyBot"/>
             <!--arg value="python sample_bots\python\HunterBot.py"/-->
-            <arg value="python sample_bots\python\HunterBot.py"/>
+            <arg value="python sample_bots\python\HoldBot.py"/>
         </exec>
     </target>
+
+    <target name="run test-areas">
+        <exec dir="tools" executable="cmd" searchpath="tools">
+            <arg value="/c"/>
+            <arg path="tools/do-play-without-ui.cmd"/>
+            <arg path="tools/maps/real/cell_maze_p02_01.map"/>
+            <arg value="--turns"/>
+            <arg value="300"/>
+            <arg value="java -classpath ./my/last.jar MyBot"/>
+            <arg value="java -classpath ./my/Brain1.2.jar MyBot"/>
+            <!--arg value="python sample_bots\python\HoldBot.py"/-->
+        </exec>
+    </target>
+
 
     <target name="run maze2 2 ours">
         <exec dir="tools" executable="cmd" searchpath="tools">
             <arg value="/c"/>
-            <arg path="tools/do-play.cmd"/>
+            <arg path="tools/do-play-without-ui.cmd"/>
             <arg path="tools/maps/real/maze_02p_01.map"/>
             <arg value="java -classpath ./my/last.jar MyBot"/>
-            <arg value="java -classpath ./my/Brain1.2.jar MyBot"/>
+            <arg value="java -classpath ./my/Brain1.3.jar MyBot"/>
             <!--arg value="python sample_bots\python\HunterBot.py"/-->
         </exec>
     </target>
@@ -56,7 +70,7 @@
             <arg path="tools/do-play.cmd"/>
             <arg path="tools/maps/real/maze_06p_01.map"/>
             <arg value="java -classpath ./my/last.jar MyBot "/>
-            <arg value="java -classpath ./my/Brain1.jar MyBot"/>
+            <arg value="java -classpath ./my/Brain1.2.jar MyBot"/>
             <!--arg value="python sample_bots\python\HunterBot.py"/-->
             <arg value="python sample_bots\python\HunterBot.py"/>
             <arg value="python sample_bots\python\HunterBot.py"/>

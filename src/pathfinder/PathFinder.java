@@ -189,7 +189,8 @@ public class PathFinder<C> {
             return;
         }
         for (C nearestC: helper.getNearestCells(currentCell.coord)) {
-            addToOpenedList(nearestC, currentCell);
+            if (helper.exists(nearestC))
+                addToOpenedList(nearestC, currentCell);
         }
     }
 

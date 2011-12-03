@@ -1,0 +1,287 @@
+<html>
+<head>
+    <script src="jquery-1.7.min.js"></script>
+    <script src="../field.js"></script>
+    <script>
+
+        var ctx, SIZE;
+
+        var Review = {
+
+            init: function() {
+                this.current = 0;
+                this.count = 0;
+                if (Steps != undefined) {
+                    this.count = Steps.length;
+                    ReviewPainter.paintSelector(Steps, this.count);
+                    this.onSelect();
+                }
+                else {
+                    ReviewPainter.paintNothing();
+                }
+            },
+
+            next: function() {
+                if (this.hasNext()) {
+                    this.current++;
+                    this.onSelect();
+                }
+            },
+
+            prev: function() {
+                if (this.hasPrev()) {
+                    this.current--;
+                    this.onSelect();
+                }
+            },
+
+            select: function(current) {
+                this.current = current;
+                this.onSelect();
+            },
+
+            hasNext: function() {
+                return this.current < this.count - 1;
+            },
+
+            hasPrev: function() {
+                return this.current > 0;
+            },
+
+            onSelect: function() {
+                ReviewPainter.paintTurn(this.current);
+                ReviewPainter.paintMap(
+                        Steps[this.current].field,
+                        Steps[this.current].areas,
+                        Steps[this.current].ants);
+            }
+
+        };
+
+
+        var ReviewPainter = {
+
+            areaColors: {
+                a: "#880000",
+                b: "#008800",
+                c: "#000088",
+                d: "#888800",
+                e: "#880088",
+                f: "#008888",
+                g: "#440000",
+                h: "#004400",
+                i: "#000044",
+                j: "#444400",
+                k: "#440044",
+                l: "#004444",
+                m: "#444444",
+                n: "#888888",
+                o: "#BBBBBB",
+                p: "#BB0000",
+                q: "#00BB00",
+                r: "#BBBB00",
+                s: "#BB00BB",
+                t: "#00BBBB"
+            },
+
+            itemsColors: {
+                '*': "#888800",
+                ' ': "#EEEEBB",
+                '#': "#25298F",
+                'a': "#008800",
+                'b': "#880000",
+                '-': "#000000"
+            },
+
+            paintSelector: function(maps, count) {
+                var sel = $("#nr");
+                sel.empty();
+                for (var i = 0; i < count; i++) {
+                    sel.append($("<option value='" + i + "'>" + maps[i].turn + "</option>"))
+                }
+            },
+
+            paintMap: function(map, areas, ants) {
+                var showAreas = $("input:checked").val() == "area";
+                var rows = map.length;
+                var cols = map[0].length / 2;
+                var size = SIZE / ((cols > rows) ? cols : rows);
+                this.size = size;
+                ctx.clearRect(0, 0, SIZE, SIZE);
+                for (var row = 0; row < rows; row++) {
+                    for (var col = 0; col < cols; col++) {
+                        var p = map[row].substr(col*2, 2);
+                        var item = p[0];
+                        var area = p[1];
+                        if (item != "#" && showAreas) {
+                            if (area != ' ')
+                                ctx.fillStyle = ReviewPainter.areaColors[area];
+                            else
+                                ctx.fillStyle = "#000000";
+                            ctx.fillRect(col * size, row * size, size, size);
+                        }
+                        else {
+                            ctx.fillStyle = ReviewPainter.itemsColors[item.toLowerCase()];
+                            if (item == 'A' || item == 'B') {
+                                ctx.beginPath();
+                                ctx.arc(col * size + size/2, row * size + size/2, size/2, 0, Math.PI*2, true);
+                                ctx.closePath();
+                                ctx.fill();
+                            }
+                            else {
+                                ctx.fillRect(col * size, row * size, size, size);
+                            }
+
+                        }
+
+                    }
+                }
+                if (showAreas) {
+                    this.paintAreas(ctx, size, areas);
+                }
+                else {
+                    this.paintAnts(ctx, size, ants);
+                }
+                for (var area in areas) {
+                    if (areas.hasOwnProperty(area)) {
+                        var ar = areas[area];
+                        this._coordsToArea[ar.x + "_" + ar.y] = ar;
+					}
+				}
+				
+            },
+
+            paintAnts: function(ctx, size, ants) {
+                ctx.strokeStyle = "black";
+                ctx.lineWidth = "1";
+                for (var i = 0; i < ants.length; i++) {
+                    var ant = ants[i];
+                    if (ant.tx) {
+                        ctx.beginPath();
+                        ctx.moveTo(ant.x*size + size/2, ant.y*size + size/2);
+                        ctx.lineTo(ant.tx*size + size/2, ant.ty*size + size/2);
+                        ctx.stroke();
+                    }
+                }
+            },
+
+            _coordsToArea: {},
+
+            paintAreas: function(ctx, size, areas) {
+                this._coordsToArea = {};
+                for (var area in areas) {
+                    if (areas.hasOwnProperty(area)) {
+                        var ar = areas[area];
+                        //draw area marker
+                        ctx.strokeStyle = "#FFFFFF";
+                        ctx.lineWidth = ar.reached ? "2" : "1";
+                        ctx.strokeRect(ar.x*size, ar.y*size, size, size);
+                        for (var i = 0; i < ar.nearest.length; i++) {
+                            var nar = areas[ar.nearest[i]];
+                            //draw line between
+                            ctx.lineWidth = ar.reached && nar.reached ? "2" : "1";
+                            ctx.beginPath();
+                            ctx.moveTo(ar.x*size + size/2, ar.y*size + size/2);
+                            ctx.lineTo(nar.x*size + size/2, nar.y*size + size/2);
+                            ctx.closePath();
+                            ctx.stroke();
+                        }
+                    }
+                }
+            },
+
+            getCoords: function(x, y) {
+                return {x: Math.floor(x/this.size), y: Math.floor(y/this.size)};
+            },
+
+            resolveCoords: function(x, y) {
+                return this._coordsToArea[Math.floor(x/this.size) + "_" + Math.floor(y/this.size)];
+            },
+
+            getAreaInfo: function(x, y) {
+                var area = this.resolveCoords(x, y);
+                if (area && area.reached != undefined) {
+                    return [
+                            "Nr: " + area.nr,
+                            "Kind: " + area.kind,
+                            "Distance from hill: " + area.distance,
+                            "Reached: " + area.reached,
+                            "Enemies: " + area.enemies,
+                            "Alies: " + area.alies,
+                            "Total food: " + area.food,
+                            "Visited: " + area.visitedAgo + " turns ago"
+                    ].join("<br/>");
+                }
+                else {
+                    return "";
+                }
+            },
+
+            paintTurn: function(turn) {
+                $("#nr").val(turn);
+            },
+
+            paintNothing: function() {
+                $("#nr").html("<option selected='selected'>No review</option>");
+            }
+        };
+
+        $(function() {
+            ctx = $("#canvas")[0].getContext('2d');
+            SIZE = $("#canvas").attr("width");
+
+            $("#next").click($.proxy(Review.next, Review));
+            $("#prev").click($.proxy(Review.prev, Review));
+            $("input[name=view]").click($.proxy(Review.onSelect, Review));
+            function onSelect() {
+                Review.select($(this).val());
+            }
+            $("#nr").change(onSelect).click(onSelect).keypress(onSelect);
+            var $info = $("#additional-info");
+            $("#canvas").mousemove(function(e) {
+                var coords = ReviewPainter.getCoords(e.pageX - $(this).offset().left, e.pageY - $(this).offset().top);
+                var info = "x: " + coords.x + ", y: " + coords.y + "<br/><br/>";
+                info += ReviewPainter.getAreaInfo(e.pageX - $(this).offset().left, e.pageY - $(this).offset().top);
+                $info.html(info);
+            });
+            Review.init();
+        });
+
+
+
+    </script>
+    <style type="text/css">
+        #canvas,
+        #additional-info {
+            float: left;
+        }
+        body {
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+
+
+<button id="prev">&lt;</button>
+<select id="nr"></select>
+<button id="next">&gt;</button>
+<br/>
+<label>
+    <input type="radio" name="view" value="area"/> Areas
+</label>
+<label>
+    <input type="radio" name="view" value="map" checked="true"/> Map
+</label>
+<br/>
+
+<canvas id="canvas" width="800" height="800">
+
+</canvas>
+<div id="additional-info">
+
+</div>
+
+
+</body>
+</html>

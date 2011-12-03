@@ -1,5 +1,6 @@
 import bot.brain.BrainBot;
 import bot.brain.Strategy;
+import bot2.Bot;
 
 import java.io.IOException;
 
@@ -13,6 +14,6 @@ public class MyBot {
      * @throws java.io.IOException if an I/O error occurs
      */
     public static void main(String[] args) throws IOException {
-        new BrainBot(new Strategy(), args.length > 0 ? args[0] : null).readSystemInput();
+        new Bot().readSystemInput();
     }
 }
