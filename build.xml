@@ -59,7 +59,7 @@
             <arg path="tools/do-play-without-ui.cmd"/>
             <arg path="tools/maps/real/maze_02p_01.map"/>
             <arg value="java -classpath ./my/last.jar MyBot"/>
-            <arg value="java -classpath ./my/Brain1.3.jar MyBot"/>
+            <arg value="java -classpath ./my/last.jar MyBot"/>
             <!--arg value="python sample_bots\python\HunterBot.py"/-->
         </exec>
     </target>

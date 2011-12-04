@@ -28,7 +28,7 @@ public class Bot extends AbstractSystemInputParser implements MoveHelper {
     private Areas areas;
 
     public Bot() throws IOException {
-        Logger.init();
+        //Logger.init();
     }
 
     @Override
