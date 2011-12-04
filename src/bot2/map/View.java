@@ -91,6 +91,7 @@ public class View {
     }
 
     public boolean canReach(FieldPoint coord) {
+        initLists();
         return reachableCoords.contains(coord);
     }
 

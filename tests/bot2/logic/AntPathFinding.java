@@ -1,6 +1,5 @@
 package bot2.logic;
 
-import bot.Ants;
 import bot2.MoveHelper;
 import bot2.ai.Ant;
 import bot2.map.FieldPoint;
@@ -50,7 +49,7 @@ public class AntPathFinding {
     @Test
     public void path_1() {
         Ant ant = new Ant(FieldPoint.point(8, 10), moveHelper, view);
-        ant.goToPoint(FieldPoint.point(12, 10));
+        ant.doWalkToPoint(FieldPoint.point(12, 10));
         doMove(ant);
         doMove(ant);
         doMove(ant);
@@ -64,8 +63,8 @@ public class AntPathFinding {
     public void intersection_1() {
         Ant ant1 = new Ant(FieldPoint.point(8, 10), moveHelper, view);
         Ant ant2 = new Ant(FieldPoint.point(11, 10), moveHelper, view);
-        ant1.goToPoint(FieldPoint.point(11, 10));
-        ant2.goToPoint(FieldPoint.point(8, 10));
+        ant1.doWalkToPoint(FieldPoint.point(11, 10));
+        ant2.doWalkToPoint(FieldPoint.point(8, 10));
         syncField(ant1, ant2);
         verify(moveHelper).move(FieldPoint.point(8, 10), FieldPoint.point(9, 10));
         verify(moveHelper).move(FieldPoint.point(11, 10), FieldPoint.point(10, 10));

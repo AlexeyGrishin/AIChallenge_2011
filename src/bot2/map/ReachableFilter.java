@@ -17,7 +17,7 @@ public class ReachableFilter implements PointsFilter {
 
     public Collection<FieldPoint> filter(Collection<FieldPoint> points, FieldPoint areaCenter) {
         HashSet<FieldPoint> reachablePoints = new HashSet<FieldPoint>();
-        fillReachable(new ArrayList<FieldPoint>(points), reachablePoints, areaCenter);
+        fillReachable(new HashSet<FieldPoint>(points), reachablePoints, areaCenter);
         return reachablePoints;
     }
 

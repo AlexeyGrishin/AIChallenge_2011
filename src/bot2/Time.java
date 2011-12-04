@@ -31,11 +31,13 @@ public class Time {
     public void completed(String action) {
         completed(action, action);
     }
+
     public void completed(String type, String action) {
         long newTime = System.currentTimeMillis();
         long duration = newTime - lastTime;
         lastTime = newTime;
         actions.add(new TimeAction(type, action, duration));
+        Logger.log(action + ": " + duration);
     }
 
     public void logTime() {

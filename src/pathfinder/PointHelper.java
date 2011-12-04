@@ -3,8 +3,6 @@ package pathfinder;
 public interface PointHelper<C> {
     int getCost(C coord);
 
-    boolean exists(C coord);
-
     int getDefaultCost();
 
     boolean isReachable(C coord);

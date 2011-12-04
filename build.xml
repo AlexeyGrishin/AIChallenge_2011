@@ -29,7 +29,7 @@
     <target name="run maze4 2 ours 2 hunters">
         <exec dir="tools" executable="cmd" searchpath="tools">
             <arg value="/c"/>
-            <arg path="tools/do-play.cmd"/>
+            <arg path="tools/do-play-without-ui.cmd"/>
             <arg path="tools/maps/real/maze_04p_02.map"/>
             <arg value="java -classpath ./my/last.jar MyBot"/>
             <arg value="python sample_bots\python\HunterBot.py"/>
@@ -67,7 +67,7 @@
     <target name="run maze6 2 ours 4 hunters">
         <exec dir="tools" executable="cmd" searchpath="tools">
             <arg value="/c"/>
-            <arg path="tools/do-play.cmd"/>
+            <arg path="tools/do-play-without-ui.cmd"/>
             <arg path="tools/maps/real/maze_06p_01.map"/>
             <arg value="java -classpath ./my/last.jar MyBot "/>
             <arg value="java -classpath ./my/Brain1.2.jar MyBot"/>
@@ -99,7 +99,7 @@
     <target name="run walk4 2 ours 2 hunters">
         <exec dir="tools" executable="cmd" searchpath="tools">
             <arg value="/c"/>
-            <arg path="tools/do-play.cmd"/>
+            <arg path="tools/do-play-without-ui.cmd"/>
             <arg path="tools/maps/real/random_walk_04p_01.map"/>
             <arg value="java -classpath ./my/last.jar MyBot"/>
             <arg value="java -classpath ./my/Brain1.2.jar MyBot"/>
@@ -112,7 +112,7 @@
     <target name="run maze8 2 ours 6 hunters">
         <exec dir="tools" executable="cmd" searchpath="tools">
             <arg value="/c"/>
-            <arg path="tools/do-play.cmd"/>
+            <arg path="tools/do-play-without-ui.cmd"/>
             <arg path="tools/maps/real/maze_08p_01.map"/>
             <arg value="java -classpath ./my/last.jar MyBot"/>
             <arg value="python sample_bots\python\HunterBot.py"/>

@@ -7,6 +7,8 @@ import bot2.ai.HillsListener;
 import bot2.map.*;
 import bot2.map.areas.CircleArea;
 import bot2.map.areas.Quadrant;
+import pathfinder.DefaultPathFinder;
+import pathfinder.PathsCache;
 
 import java.util.*;
 
@@ -28,6 +30,7 @@ public class Areas implements UnhideListener, AreaHelper, HillsListener {
     private Map<Integer, Set<FieldArea>> areaPerY = new HashMap<Integer, Set<FieldArea>>();
     private AreaDistanceCalculator calculator = new AreaDistanceCalculator();
     private GameStrategy strategy;
+    private PathsCache<FieldArea> fieldPathsCache;
 
     public Areas(Field field, GameSettings settings, GameStrategy strategy) {
         this.field = field;
@@ -39,14 +42,26 @@ public class Areas implements UnhideListener, AreaHelper, HillsListener {
         areasPreliminary = new int[field.getCols()][field.getRows()];
         field.setUnhideListener(this);
         viewRadius = this.settings.getViewRadius();
+        fieldPathsCache = new PathsCache<FieldArea>(new DefaultPathFinder<FieldArea>(
+                new AreasPathHelper(field)
+        ));
     }
 
+    public FieldArea getNearestArea(FieldPoint p) {
+        return getNearestArea(p, false);
+    }
+
+
     public FieldArea getNearestUnknownArea(FieldPoint p) {
+        return getNearestArea(p, true);
+    }
+
+    private FieldArea getNearestArea(FieldPoint p, boolean unknownOnly) {
         FieldArea nearestArea = null;
         long minLength = -1;
         for (FieldArea area: areas) {
             if (area == null) break;
-            if (area.isReached()) continue;
+            if (unknownOnly && area.isReached()) continue;
             long length = field.getDistance2(area.getCenter(), p);
             if (length < minLength || minLength == -1) {
                 minLength = length;
@@ -108,6 +123,7 @@ public class Areas implements UnhideListener, AreaHelper, HillsListener {
 
     public void onAreaReached(FieldArea area) {
         if (area.isReached()) return;
+        List<FieldArea> newAreasAdded = new ArrayList<FieldArea>(4);
         FieldPoint center = area.getCenter();
         Collection<FieldPoint> reachableAreaPoints = reachableFilter.filter(
                 new CircleArea(field, settings.getViewRadius2()).getPoints(center),
@@ -115,20 +131,47 @@ public class Areas implements UnhideListener, AreaHelper, HillsListener {
         );
         markAreaPoints(area, reachableAreaPoints);
         area.setReached();
-        areaPerX.get(center.x).remove(area);
-        areaPerY.get(center.y).remove(area);
+        removeFromSet(areaPerX, center.x, area);
+        removeFromSet(areaPerY, center.y, area);
         for (Direction dir: Direction.values()) {
             FieldPoint anotherPoint = getReachablePoint(center, area.getNumber(), dir, reachableAreaPoints);
             if (anotherPoint != null) {// && field.getDistance2(area.getCenter(), anotherPoint) >= halfRadius2) {
-                int anotherAreaNr = areasPreliminary[anotherPoint.x][anotherPoint.y];
+                int anotherAreaNr = getPreliminaryArea(anotherPoint);
                 if (anotherAreaNr != area.getNumber()) {
                     FieldArea anotherArea = get(anotherAreaNr);
                     if (anotherArea == null) {
                         anotherArea = addNewArea(anotherPoint);
+                        newAreasAdded.add(anotherArea);
                     }
-                    if (!anotherArea.isReached())
+                    if (!anotherArea.isReached()) {
                         area.addNearestArea(dir, anotherArea);
+                    }
                 }
+            }
+        }
+        fieldPathsCache.reset();
+        for (FieldArea newArea: newAreasAdded) {
+            checkAreaVisible(newArea);
+        }
+    }
+
+    private int getPreliminaryArea(FieldPoint anotherPoint) {
+        int area = field.getArea(anotherPoint.x, anotherPoint.y);
+        int preliminaryArea = areasPreliminary[anotherPoint.x][anotherPoint.y];
+        if (area == 0 && preliminaryArea == 0) {
+            return 0;
+        }
+        else if (area != 0) {
+            return area;
+        }
+        else {
+            FieldArea propArea = areas[preliminaryArea - 1];
+            if (propArea.isReached()) {
+                //the area is reached, but this point is not assigned to it - so it is not point of this area
+                return 0;
+            }
+            else {
+                return preliminaryArea;
             }
         }
     }
@@ -143,16 +186,18 @@ public class Areas implements UnhideListener, AreaHelper, HillsListener {
                 possiblePoints.add(field.normalize(center.x + dx, center.y + dy));
             }
         }
+        int number = area.getNumber();
         for (FieldPoint p: possiblePoints) {
             if (preliminaryOnly || reachableAreaPoints.contains(p)) {
-                int number = area.getNumber();
                 if (areasPreliminary[p.x][p.y] == 0) {
                     areasPreliminary[p.x][p.y] = number;
                 }
                 if (!preliminaryOnly) {
                     field.assignArea(p, number);
                 }
-
+            }
+            else {
+                areasPreliminary[p.x][p.y] = 0;
             }
         }
     }
@@ -162,11 +207,8 @@ public class Areas implements UnhideListener, AreaHelper, HillsListener {
         FieldArea fieldArea = new FieldArea(nr, anotherPoint, this);
         areas[nr-1] = fieldArea;
         fillPreliminaryArea(fieldArea);
-        checkAreaVisible(fieldArea);
-        if (!fieldArea.isReached()) {
-            addToSet(areaPerX, anotherPoint.x, fieldArea);
-            addToSet(areaPerY, anotherPoint.y, fieldArea);
-        }
+        addToSet(areaPerX, anotherPoint.x, fieldArea);
+        addToSet(areaPerY, anotherPoint.y, fieldArea);
         Logger.log("Add new area at " + anotherPoint + " with nr " + nr + (fieldArea.isReached() ? " already reached" : ""));
         return fieldArea;
     }
@@ -178,6 +220,11 @@ public class Areas implements UnhideListener, AreaHelper, HillsListener {
             areaSet.put(key, set);
         }
         set.add(area);
+    }
+
+    private void removeFromSet(Map<Integer, Set<FieldArea>> areaSet, Integer key, FieldArea area) {
+        Set<FieldArea> set = areaSet.get(key);
+        if (set != null) set.remove(area);
     }
 
     private void fillPreliminaryArea(FieldArea fieldArea) {
@@ -201,7 +248,9 @@ public class Areas implements UnhideListener, AreaHelper, HillsListener {
     }
 
     public FieldArea addArea(FieldPoint location) {
-        return addNewArea(location);
+        FieldArea area = addNewArea(location);
+        checkAreaVisible(area);
+        return area;
     }
 
     public int getCount() {
@@ -258,10 +307,18 @@ public class Areas implements UnhideListener, AreaHelper, HillsListener {
     }
 
     public void onEnemyHill(FieldPoint point) {
-        get(point).setEnemyHill(true);
+        FieldArea fieldArea = get(point);
+        if (fieldArea != null)
+            fieldArea.setEnemyHill(true);
     }
 
     public void onEnemyHillDestroyed(FieldPoint point) {
-        get(point).setEnemyHill(false);
+        FieldArea fieldArea = get(point);
+        if (fieldArea != null)
+            fieldArea.setEnemyHill(false);
+    }
+
+    public List<FieldArea> findPath(FieldArea from, FieldArea to) {
+        return this.fieldPathsCache.getPath(from, to);
     }
 }

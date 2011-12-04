@@ -30,6 +30,7 @@ public class AntsHelperTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void testGetQuickDistance_near() throws IOException {
         assertEquals(1, helper.getQuickDistanceBetween(t(10,10), t(10,11)));
         assertEquals(1, helper.getQuickDistanceBetween(t(10,10), t(11,10)));

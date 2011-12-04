@@ -18,9 +18,9 @@ public class Logger {
     private static FileWriter logger = null;
 
     public static void init() throws IOException {
-        fieldWrapper = new FileWriter(new File("q:/programming/java2/projects/aibot/field.js"));
+        fieldWrapper = new FileWriter(new File("q:/programming/java2/projects/aibot/logs/field.js"));
         fieldWrapper.write("var Steps = [];\n");
-        logger = new FileWriter(new File("q:/programming/java2/projects/aibot/log.txt"));
+        logger = new FileWriter(new File("q:/programming/java2/projects/aibot/logs/log.txt"));
     }
 
     public static void log(String str) {
@@ -49,12 +49,17 @@ public class Logger {
         StringBuilder targets = new StringBuilder("var ants = []; Steps[Steps.length-1].ants = ants;");
         for (Ant ant: ants) {
             targets.append("ants.push({");
+            targets.append("nr: ").append(ant.getNr()).append(", ");
             targets.append("x: ").append(ant.getLocation().x).append(", ");
             targets.append("y: ").append(ant.getLocation().y).append(", ");
             if (!ant.getTargetPoint().equals(ant.getLocation())) {
                 targets.append("target: \"").append(ant.getTargetName()).append("\", ");
                 targets.append("tx: ").append(ant.getTargetPoint().x).append(", ");
                 targets.append("ty: ").append(ant.getTargetPoint().y).append(", ");
+                if (ant.getTargetArea() != null) {
+                    targets.append("tax: ").append(ant.getTargetArea().getCenter().x).append(", ");
+                    targets.append("tay: ").append(ant.getTargetArea().getCenter().y).append(", ");
+                }
             }
             targets.append("a:0");
             targets.append("});\n");
@@ -158,6 +163,7 @@ public class Logger {
             bld.append("TOTAL,,").append(overall);
             try {
                 logger.write(bld + "\n");
+                logger.flush();
             } catch (IOException e) {
                 //ignore
             }

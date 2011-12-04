@@ -67,6 +67,7 @@ public abstract class AbstractSystemInputParser extends AbstractSystemInputReade
             System.err.println("Error in process line");
             System.err.println(e.getMessage());
             e.printStackTrace(System.err);
+            finishTurn();
         }
     }
 

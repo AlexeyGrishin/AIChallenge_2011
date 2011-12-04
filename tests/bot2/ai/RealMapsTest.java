@@ -1,6 +1,7 @@
 package bot2.ai;
 
 import bot2.ai.areas.FieldArea;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;

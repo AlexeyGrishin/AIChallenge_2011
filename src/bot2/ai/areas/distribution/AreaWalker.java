@@ -1,5 +1,7 @@
 package bot2.ai.areas.distribution;
 
+import java.util.Collection;
+
 public interface AreaWalker {
 
     /**

@@ -11,6 +11,7 @@ import util.MockField;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.fail;
@@ -40,7 +41,7 @@ public class AreasTestAbstract {
             }
         }
         if (!points.isEmpty()) {
-            fail("Following areas were expected but not found: " + points);
+            fail("Following areas were expected but not found: " + points + " following found: " + Arrays.toString(nearAreas));
         }
     }
 

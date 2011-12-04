@@ -1,7 +1,7 @@
 <html>
 <head>
     <script src="jquery-1.7.min.js"></script>
-    <script src="../field.js"></script>
+    <script src="../logs/field.js"></script>
     <script>
 
         var ctx, SIZE;
@@ -148,8 +148,15 @@
                         this._coordsToArea[ar.x + "_" + ar.y] = ar;
 					}
 				}
-				
+                this._coordsToAnt = {};
+                for (var i = 0; i < ants.length; i++) {
+                    var ant = ants[i];
+                    this._coordsToAnt[ant.x + "_" + ant.y] = ant;
+                }
+
             },
+
+            _coordsToAnt: {},
 
             paintAnts: function(ctx, size, ants) {
                 ctx.strokeStyle = "black";
@@ -161,6 +168,14 @@
                         ctx.moveTo(ant.x*size + size/2, ant.y*size + size/2);
                         ctx.lineTo(ant.tx*size + size/2, ant.ty*size + size/2);
                         ctx.stroke();
+                    }
+                    if (ant.tax && (ant.tax != ant.tx || ant.tay != ant.ty)) {
+                        ctx.strokeStyle = "#444444";
+                        ctx.beginPath();
+                        ctx.moveTo(ant.tx*size + size/2, ant.ty*size + size/2);
+                        ctx.lineTo(ant.tax*size + size/2, ant.tay*size + size/2);
+                        ctx.stroke();
+
                     }
                 }
             },
@@ -195,11 +210,11 @@
             },
 
             resolveCoords: function(x, y) {
-                return this._coordsToArea[Math.floor(x/this.size) + "_" + Math.floor(y/this.size)];
+                return Math.floor(x/this.size) + "_" + Math.floor(y/this.size);
             },
 
             getAreaInfo: function(x, y) {
-                var area = this.resolveCoords(x, y);
+                var area = this._coordsToArea[this.resolveCoords(x, y)];
                 if (area && area.reached != undefined) {
                     return [
                             "Nr: " + area.nr,
@@ -215,6 +230,20 @@
                 else {
                     return "";
                 }
+            },
+
+            getAntInfo: function(x, y) {
+                var ant = this._coordsToAnt[this.resolveCoords(x, y)];
+                if (ant) {
+                    return [
+                            "Nr: " + ant.nr,
+                            "Target: " + ant.target
+                    ].join("<br/>");
+                }
+                else {
+                    return "";
+                }
+
             },
 
             paintTurn: function(turn) {
@@ -242,6 +271,8 @@
                 var coords = ReviewPainter.getCoords(e.pageX - $(this).offset().left, e.pageY - $(this).offset().top);
                 var info = "x: " + coords.x + ", y: " + coords.y + "<br/><br/>";
                 info += ReviewPainter.getAreaInfo(e.pageX - $(this).offset().left, e.pageY - $(this).offset().top);
+				info += "<br/><br/>";
+                info += ReviewPainter.getAntInfo(e.pageX - $(this).offset().left, e.pageY - $(this).offset().top);
                 $info.html(info);
             });
             Review.init();

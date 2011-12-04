@@ -12,6 +12,11 @@ public class Ant {
 
     private int nr;
     private static int NR = 1;
+
+    public int getNr() {
+        return nr;
+    }
+
     enum IfStepFailed {
         REPEAT,
         CANCEL
@@ -63,26 +68,38 @@ public class Ant {
         log(" =(");
     }
 
-    public void goToPoint(FieldPoint point) {
-        log(location + ": Go to point " + point);
+    public void doAttackHill(FieldPoint point, HillsHelper helper) {
+        log(": Attack hill at " + point + "!");
+        nextTarget = new AttackHill(point, visibleView, helper);
+        update();
+    }
+
+    public void doWalkToPoint(FieldPoint point) {
+        log( ": Go to point " + point);
         nextTarget = new PointTarget(point, visibleView);
         update();
     }
 
     public void doReachArea(FieldArea area) {
-        log(location + ": Go to area " + area.getNumber() + " at " + area.getCenter());
+        if (area == null) {
+            log("Was sent to null area. I will just wait here");
+            return;
+        }
+        log( ": Go to area " + area.getNumber() + " at " + area.getCenter());
         targetArea = area;
         FieldArea nextArea = mover.getNextAreaOnWayTo(location, targetArea);
-        log(location + ": Next area on my way is " + nextArea.getNumber() + " at " + area.getCenter());
-        nextTarget =
-                nextArea.isReached()
-                        ? new AreaTarget(nextArea, visibleView)
-                        : new NotReachedArea(nextArea, visibleView);
-        update();
+        if (nextArea != null) {
+            log(location + ": Next area on my way is " + nextArea.getNumber() + " at " + area.getCenter());
+            nextTarget =
+                    nextArea.isReached()
+                            ? new AreaTarget(nextArea, visibleView)
+                            : new NotReachedArea(nextArea, visibleView);
+            update();
+        }
     }
 
     public void doGatherFood(FieldPoint point) {
-        log(location + ": Gather food at " + point);
+        log(": Gather food at " + point);
         targetArea = null;
         nextTarget = new FoodTarget(point, visibleView);
         update();
@@ -124,6 +141,10 @@ public class Ant {
 
     public boolean isHarvesting() {
         return nextTarget instanceof FoodTarget;
+    }
+
+    public boolean isAttackingHill() {
+        return nextTarget instanceof AttackHill;
     }
 
     public String toString() {

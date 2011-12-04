@@ -18,10 +18,6 @@ public class VisibleAreaPathHelper implements PointHelper<FieldPoint> {
         return 1;
     }
 
-    public boolean exists(FieldPoint coord) {
-        return true;//view.canReach(coord);
-    }
-
     public int getDefaultCost() {
         return 1;
     }

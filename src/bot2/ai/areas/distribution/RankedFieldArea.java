@@ -1,29 +1,39 @@
 package bot2.ai.areas.distribution;
 
+import bot2.ai.areas.AreasPathHelper;
 import bot2.ai.areas.FieldArea;
 import bot2.ai.areas.FieldAreaComparators;
 import bot2.ai.areas.FieldAreaKind;
 import common.Compare;
 
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class RankedFieldArea implements DistributableArea {
 
     private AreaWrapper<FieldArea> wrapper;
     private FieldArea area;
+    private AreasPathHelper pathHelper;
     private static Map<FieldAreaKind, Comparator<FieldArea>> comparators = new HashMap<FieldAreaKind, Comparator<FieldArea>>();
     private static Map<FieldAreaKind, Integer> priorities = new HashMap<FieldAreaKind, Integer>();
     private static Comparator<FieldArea> priorityComparator;
-    public RankedFieldArea(AreaWrapper<FieldArea> wrapper, FieldArea area) {
+    private List<DistributableArea> nearestAreas = null;
+
+    public RankedFieldArea(AreaWrapper<FieldArea> wrapper, FieldArea area, AreasPathHelper pathHelper) {
         this.wrapper = wrapper;
         this.area = area;
+        this.pathHelper = pathHelper;
     }
 
     public Collection<DistributableArea> getNearestAreas() {
-        return wrapper.wrap(area.getNearAreasCollection());
+        if (nearestAreas == null) {
+            nearestAreas = new ArrayList<DistributableArea>(4);
+            for (FieldArea nearestArea: pathHelper.getNearestCells(area)) {
+                if (pathHelper.isReachable(nearestArea)) {
+                    nearestAreas.add(wrapper.wrap(nearestArea));
+                }
+            }
+        }
+        return nearestAreas;
     }
 
     public int getRequiredAmount(int defaultAmount) {

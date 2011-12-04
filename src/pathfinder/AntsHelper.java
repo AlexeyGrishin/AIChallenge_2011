@@ -19,10 +19,6 @@ public class AntsHelper implements PointHelper<Tile> {
         return 1;
     }
 
-    public boolean exists(Tile coord) {
-        return true;
-    }
-
     public int getDefaultCost() {
         return 1;
     }

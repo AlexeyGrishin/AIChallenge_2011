@@ -45,10 +45,11 @@ public class Bot extends AbstractSystemInputParser implements MoveHelper {
         reachableFilter = new ReachableFilter(visibleArea);
         areas = new Areas(field, settings, ai);
         hills.setHillsListener(areas);
+        ai.setSettings(settings);
     }
 
     private List<Integer> turnsToStop = Arrays.asList(
-            314
+            235
     );
 
     @Override
@@ -122,11 +123,9 @@ public class Bot extends AbstractSystemInputParser implements MoveHelper {
         for (Ant ant: ants) {
             ant.beforeTurn();
             if (noAreas) {
-                FieldArea area = areas.addArea(ant.getLocation());
-                //ant.getVisibleView().assignAreaInReachableArea(area.getNumber());
+                areas.addArea(ant.getLocation());
             }
             ant.getVisibleView().replaceInVisibleArea(Item.UNKNOWN, Item.LAND);
-            //areas.onTurn(ant.getLocation());
         }
         areas.afterUpdate();
         hills.afterUpdate();
@@ -138,7 +137,7 @@ public class Bot extends AbstractSystemInputParser implements MoveHelper {
 
         //actions
         try {
-            ai.doTurn(ants, field, areas);
+            ai.doTurn(ants, field, areas, hills);
         }
         catch (Exception e) {
             Logger.log("Error occured: " + e);
@@ -194,17 +193,13 @@ public class Bot extends AbstractSystemInputParser implements MoveHelper {
         if (fromArea == null || fromArea.getNearAreasCollection().contains(targetArea)) {
             return targetArea;
         }
-        PathFinder<FieldArea> areaFinder = new PathFinder<FieldArea>(
-                new AreasPathHelper(field), fromArea, targetArea
-        );
-        areaFinder.findPath();
-        Collection<PathFinder.PathElement<FieldArea>> path = areaFinder.getFoundPath();
+        List<FieldArea> path = areas.findPath(fromArea, targetArea);
         if (path.isEmpty()) {
             Logger.log("WARN: Tried to find way from " + fromArea + " to " + targetArea + ", but failed");
             return null;
         }
         else {
-            return path.iterator().next().to;
+            return path.get(0);
         }
 
     }

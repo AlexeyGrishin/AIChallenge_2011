@@ -7,17 +7,23 @@ import java.util.*;
 
 public class Assigner implements Distributor {
 
-    /*
-    1. сейчас если 3 муравья и 1 высокоприоритетная точка, то ход за ходом к ней отправятся все трое
+    public static final NotDistributedHandler SEND_TO_NEAREST = new NotDistributedHandler() {
+        public void distribute(Collection<AreaWalker> walkers) {
+            for (AreaWalker walker : walkers) {
+                List<DistributableArea> nearAreas = new ArrayList<DistributableArea>(walker.getDestinationArea().getNearestAreas());
+                if (!nearAreas.isEmpty()) {
+                    Collections.sort(nearAreas);
+                    walker.moveTo(nearAreas.get(0));
+                }
+            }
+        }
+    };
+    private NotDistributedHandler notDistributedHandler = SEND_TO_NEAREST;
 
-       надо для муравья хранить два участка - итоговый, и следующий
+    public void setNotDistributedHandler(NotDistributedHandler notDistributedHandler) {
+        this.notDistributedHandler = notDistributedHandler;
+    }
 
-       если он движется, то учитывать итоговый. если покоится - то следующий.
-
-    2.
-
-
-     */
     public void distribute(Collection<DistributableArea> areas, Collection<AreaWalker> walkers) {
         Time.time.completed("Before distribution");
         List<AreaWalker> freeWalkers = new ArrayList<AreaWalker>(walkers.size());
@@ -26,7 +32,9 @@ public class Assigner implements Distributor {
             if (!walker.isInMove()) {
                 freeWalkers.add(walker);
             }
-            alreadyServedAreas.add(walker.getDestinationArea());
+            else {
+                alreadyServedAreas.add(walker.getDestinationArea());
+            }
         }
         List<ReqArea> reqAreas = new LinkedList<ReqArea>();
         List<ReqArea> postponedReqAreas = new LinkedList<ReqArea>();
@@ -57,7 +65,7 @@ public class Assigner implements Distributor {
 
             }
             else {
-                Logger.log("Cannot find any walker for area " + next.area + ", probably they aready on it: " + freeWalkers);
+                Logger.log("Cannot find any walker for area " + next.area);
             }
             if (reqAreas.isEmpty()) {
                 Logger.log("  Some areas require more ants, reiterate: " + postponedReqAreas);
@@ -66,19 +74,17 @@ public class Assigner implements Distributor {
             }
         }
         if (!freeWalkers.isEmpty()) {
-            Logger.log("  Some ants are without target, send them to nearest areas");
+            Logger.log("  Some ants are without target, redistribute them");
+            notDistributedHandler.distribute(freeWalkers);
         }
-        for (AreaWalker walker: freeWalkers) {
-            List<DistributableArea> nearAreas = new ArrayList<DistributableArea>(walker.getDestinationArea().getNearestAreas());
-            Collections.sort(nearAreas);
-            walker.moveTo(nearAreas.get(0));
-        }
+
 
         Time.time.completed("After distribution");
 
     }
 
     private AreaWalker findNearestWalker(List<AreaWalker> freeWalkers, ReqArea reqArea) {
+        //TODO: здесь тоже надо бы считать текущее местоположение, а не результат
         Map<DistributableArea, AreaWalker> walkersAreas = new HashMap<DistributableArea, AreaWalker>();
         for (AreaWalker walker: freeWalkers) {
             walkersAreas.put(walker.getDestinationArea(), walker);
@@ -88,6 +94,9 @@ public class Assigner implements Distributor {
         toProcess.add(reqArea.area);
         while (!toProcess.isEmpty()) {
             DistributableArea area = toProcess.remove(0);
+            if (visited.contains(area)) {
+                continue;
+            }
             AreaWalker walker = walkersAreas.get(area);
             if (walker != null) {
                 return walker;
@@ -122,5 +131,10 @@ public class Assigner implements Distributor {
         public boolean stillHasRequirements() {
             return requirements > 0;
         }
+
+        public String toString() {
+            return area + "(requires " + requirements + ")";
+        }
+
     }
 }

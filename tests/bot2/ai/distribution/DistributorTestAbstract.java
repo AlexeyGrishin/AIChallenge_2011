@@ -5,6 +5,7 @@ import bot2.ai.areas.distribution.DistributableArea;
 import bot2.ai.areas.distribution.Distributor;
 import org.junit.Before;
 import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
@@ -32,9 +33,16 @@ public abstract class DistributorTestAbstract {
 
     @Before
     public void setUp() {
+        MockitoAnnotations.initMocks(this);
         createdWalkers.clear();
         createdAreas.clear();
         distributor = createDistributor();
+    }
+
+    protected void createWalkersWhichStoreMoves(int count, DistributableArea area, final Collection<DistributableArea> areasMovedTo) {
+        for (int i = 0; i < count; i++) {
+            createWalkerWhichStoreMoves(area, areasMovedTo);
+        }
     }
 
     protected AreaWalker createWalkerWhichStoreMoves(DistributableArea area, final Collection<DistributableArea> areasMovedTo) {

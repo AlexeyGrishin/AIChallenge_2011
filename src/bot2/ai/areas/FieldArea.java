@@ -94,7 +94,7 @@ public class FieldArea {
     }
 
     public String toString() {
-        return "Area#" + getNumber() + "(" + getCenter() + ")";
+        return "Area#" + getNumber() + "(" + getCenter() + ")" + kind;
     }
 
     @Override

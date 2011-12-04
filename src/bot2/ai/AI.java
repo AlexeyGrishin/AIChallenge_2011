@@ -3,6 +3,7 @@ package bot2.ai;
 import bot2.GameSettings;
 import bot2.Logger;
 import bot2.ai.areas.Areas;
+import bot2.ai.areas.AreasPathHelper;
 import bot2.ai.areas.FieldArea;
 import bot2.ai.areas.distribution.*;
 import bot2.map.Field;
@@ -13,15 +14,17 @@ import java.util.*;
 
 public class AI implements GameStrategy {
 
-    private Distributor areasDistributor = new Assigner();
+    private Assigner areasDistributor = new Assigner();
+    private BetweenTargetsDistributor<AreaWalker, FieldArea> antByAreasDistributor = new BetweenTargetsDistributor<AreaWalker, FieldArea>();
     private GameSettings settings;
 
     public void setSettings(GameSettings settings) {
         this.settings = settings;
     }
 
-    public void doTurn(List<Ant> ants, Field field, Areas areas) {
+    public void doTurn(List<Ant> ants, Field field, Areas areas, Hills hills) {
         List<Ant> freeAnts = new ArrayList<Ant>(ants);
+        doAttackVisibleHills(freeAnts, hills, field);
         doGatherFood(freeAnts, field);
         doInspectNewArea(freeAnts, field, areas);
         for (Ant ant: ants) {
@@ -29,8 +32,25 @@ public class AI implements GameStrategy {
         }
     }
 
-    private void doInspectNewArea(List<Ant> freeAnts, Field field, Areas areas) {
-        AreaWrapper<FieldArea> wrapper = new RankedFieldAreaWrapper();
+    private void doAttackVisibleHills(List<Ant> freeAnts, Hills hills, Field field) {
+        if (hills.getEnemiesHills().isEmpty()) return;
+        for (Ant ant: new ArrayList<Ant>(freeAnts)) {
+            if (ant.isAttackingHill()) {
+                freeAnts.remove(ant);
+            }
+            else {
+                for (FieldPoint enemyHill: hills.getEnemiesHills()) {
+                    if (ant.getVisibleView().canReach(enemyHill)) {
+                        ant.doAttackHill(enemyHill, field);
+                        freeAnts.remove(ant);
+                    }
+                }
+            }
+        }
+    }
+
+    private void doInspectNewArea(List<Ant> freeAnts, Field field, final Areas areas) {
+        final AreaWrapper<FieldArea> wrapper = new RankedFieldAreaWrapper(new AreasPathHelper(field));
         List<DistributableArea> distributableAreas = new ArrayList<DistributableArea>(areas.getCount());
         for (FieldArea area: areas.getAllAreas()) {
             if (area == null) break;
@@ -43,11 +63,65 @@ public class AI implements GameStrategy {
                 walkers.add(new AntAreaWalker(ant, antsArea, wrapper));
             }
             else {
-                ant.doReachArea(areas.getNearestUnknownArea(ant.getLocation()));
+                FieldArea targetArea = areas.getNearestUnknownArea(ant.getLocation());
+                if (targetArea == null) {
+                    targetArea = areas.getNearestArea(ant.getLocation());
+                }
+                ant.doReachArea(targetArea);
             }
         }
+        areasDistributor.setNotDistributedHandler(createNotDistributedHandler(areas, wrapper));
         areasDistributor.distribute(distributableAreas, walkers);
 
+    }
+
+    private NotDistributedHandler createNotDistributedHandler(final Areas areas, final AreaWrapper<FieldArea> wrapper) {
+        return new NotDistributedHandler() {
+            public void distribute(Collection<AreaWalker> walkers) {
+                List<FieldArea> notReached = getNotReachedAreas(areas);
+                List<AreaWalker> freeWalkers = new ArrayList<AreaWalker>(walkers);
+                if (!notReached.isEmpty()) {
+                    Logger.log("Send not distributed ants to unreached areas");
+                    freeWalkers.clear();
+                    //TODO: тут надо считать дистанцию от текущего местоположения, а не от цели
+                    for (BetweenTargetsDistributor.SourceTarget<AreaWalker, FieldArea> st: antByAreasDistributor.distribute(walkers, notReached, createMeasurer(areas, wrapper))) {
+                        if (st.target != null)
+                            st.source.moveTo(wrapper.wrap(st.target));
+                        else
+                            freeWalkers.add(st.source);
+                    }
+                }
+                if (!freeWalkers.isEmpty()) {
+                    Logger.log("Send not distributed ants to near areas - no unreached");
+                    Assigner.SEND_TO_NEAREST.distribute(walkers);
+                }
+            }
+        };
+    }
+
+    private List<FieldArea> getNotReachedAreas(Areas areas) {
+        List<FieldArea> notReached = new ArrayList<FieldArea>();
+        for (FieldArea area: areas.getAllAreas()) {
+            if (area == null) break;
+            if (!area.isReached()) {
+                notReached.add(area);
+            }
+        }
+        return notReached;
+    }
+
+    private BetweenTargetsDistributor.DistanceMeasurer<AreaWalker, FieldArea> createMeasurer(final Areas areas, final AreaWrapper<FieldArea> wrapper) {
+        return new BetweenTargetsDistributor.DistanceMeasurer<AreaWalker, FieldArea>() {
+            public int measureDistance(AreaWalker from, FieldArea to) {
+                FieldArea sourceArea = wrapper.unwrap(from.getDestinationArea());
+                if (sourceArea == to) return 0;
+                int distance = areas.findPath(sourceArea, to).size();
+                if (distance == 0) {
+                    return NOT_FOUND;
+                }
+                return distance;
+            }
+        };
     }
 
     private FieldArea getAntArea(Ant ant, Areas areas) {

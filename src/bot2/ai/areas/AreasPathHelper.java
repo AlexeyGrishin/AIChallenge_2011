@@ -18,16 +18,12 @@ public class AreasPathHelper implements PointHelper<FieldArea> {
         }
     }
 
-    public boolean exists(FieldArea coord) {
-        return coord.isReached();
-    }
-
     public int getDefaultCost() {
         return 1;
     }
 
     public boolean isReachable(FieldArea coord) {
-        return true;
+        return coord.isReached();
     }
 
     public Iterable<? extends FieldArea> getNearestCells(FieldArea coord) {
