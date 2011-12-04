@@ -18,7 +18,7 @@ public class AreaDistanceCalculator {
         List<FieldArea> nextLevelAreas = new LinkedList<FieldArea>();
         for (FieldArea area: levelAreas) {
             area.setDistanceToHill(level);
-            for (FieldArea narea: area.getNearAreasCollection()) {
+            for (FieldArea narea: area.getNearAreas()) {
                 if (narea.getDistanceToHill() == -1 || narea.getDistanceToHill() > level+1)
                     nextLevelAreas.add(narea);
             }

@@ -83,6 +83,6 @@ public class AreaDistanceCalculatorTest {
 
 
     private FieldArea createField(int nr) {
-        return new FieldArea(nr, FieldPoint.point(0,2), mock(AreaHelper.class));
+        return new FieldArea(nr, FieldPoint.point(nr,nr), mock(AreaHelper.class));
     }
 }

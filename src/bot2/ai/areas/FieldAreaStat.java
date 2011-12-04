@@ -72,7 +72,7 @@ public class FieldAreaStat {
     }
 
     public int getOpened() {
-        return area.getNearAreasCollection().size();
+        return area.getNearAreas().size();
     }
 
     public String toString() {

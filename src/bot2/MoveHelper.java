@@ -17,4 +17,11 @@ public interface MoveHelper {
     boolean canMoveTo(FieldPoint target);
 
     FieldArea getNextAreaOnWayTo(FieldPoint from, FieldArea targetArea);
+
+    /**
+     * Calls ant on the point to perform the movement.
+     * @param point
+     * @return true if ant was moved out, false - if not, or if there is no ant at the point
+     */
+    boolean kickOurAntAt(FieldPoint point);
 }

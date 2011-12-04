@@ -39,7 +39,7 @@ public class BetweenTargetsDistributor<S, T> {
             T nearestTarget = null;
             for (T target: targets) {
                 int distance = dist.measureDistance(source, target);
-                Logger.log("  " + source + "->" + target + ": distance = " + distance);
+                //Logger.log("  " + source + "->" + target + ": distance = " + distance);
                 if (distance != DistanceMeasurer.NOT_FOUND && distance < minDistance) {
                     minDistance = distance;
                     nearestTarget = target;

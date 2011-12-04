@@ -37,6 +37,10 @@ public class RankedFieldArea implements DistributableArea {
     }
 
     public int getRequiredAmount(int defaultAmount) {
+        return getRequiredAmount(defaultAmount, area);
+    }
+
+    protected int getRequiredAmount(int defaultAmount, FieldArea area) {
         switch (area.getKind()) {
             case ENEMY_HILL:
                 return 999; //=)
@@ -54,8 +58,8 @@ public class RankedFieldArea implements DistributableArea {
         Compare c = new Compare();
         return c.values(
                 c.use(priorityComparator.compare(area, anotherArea))
-                || c.use(getKindComparator(area).compare(area, anotherArea))
-                ).result();
+                        || c.use(getKindComparator(area).compare(area, anotherArea))
+        ).result();
     }
 
     public FieldArea getArea() {
@@ -63,7 +67,7 @@ public class RankedFieldArea implements DistributableArea {
     }
 
     public String toString() {
-        return area + "[" + area.getKind() + "]";
+        return area.toString();
     }
 
     @Override

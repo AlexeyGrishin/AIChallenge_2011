@@ -4,7 +4,6 @@ import bot2.Logger;
 import bot2.MoveHelper;
 import bot2.ai.areas.FieldArea;
 import bot2.ai.targets.*;
-import bot2.map.Direction;
 import bot2.map.FieldPoint;
 import bot2.map.View;
 
@@ -12,14 +11,24 @@ public class Ant {
 
     private int nr;
     private static int NR = 1;
+    private boolean inUpdate = false;
 
     public int getNr() {
         return nr;
     }
 
     enum IfStepFailed {
+        KICK_OR_REPEAT,
         REPEAT,
-        CANCEL
+        CANCEL;
+
+        public boolean canKick() {
+            return this == IfStepFailed.KICK_OR_REPEAT;
+        }
+
+        public boolean canRepeat() {
+            return this == REPEAT || this == KICK_OR_REPEAT;
+        }
     }
 
     private FieldPoint location;
@@ -89,7 +98,7 @@ public class Ant {
         targetArea = area;
         FieldArea nextArea = mover.getNextAreaOnWayTo(location, targetArea);
         if (nextArea != null) {
-            log(location + ": Next area on my way is " + nextArea.getNumber() + " at " + area.getCenter());
+            log(location + ": Next area on my way is " + nextArea.getNumber() + " at " + nextArea.getCenter());
             nextTarget =
                     nextArea.isReached()
                             ? new AreaTarget(nextArea, visibleView)
@@ -110,16 +119,30 @@ public class Ant {
     }
 
     public void update() {
-        log("Perform target: " + nextTarget);
-        doStep(IfStepFailed.REPEAT);
+        if (inUpdate) {
+            log("Already in update");
+            return;
+        }
+        inUpdate = true;
+        try {
+            log("Perform target: " + nextTarget);
+            doStep(IfStepFailed.KICK_OR_REPEAT);
+        }
+        finally {
+            inUpdate = false;
+        }
     }
 
     private void doStep(IfStepFailed ifFailed) {
         if (nextTarget != null && !nextTarget.isReached(location) && !moved) {
-            boolean result = move(nextTarget.getNestStep(location));
-            if (!result && ifFailed == IfStepFailed.REPEAT) {
-                nextTarget.restart();
-                doStep(IfStepFailed.CANCEL);
+            FieldPoint nextStep = nextTarget.getNestStep(location);
+            boolean nextStepExists = nextStep != null;
+            boolean result = nextStepExists && move(nextStep);
+            if (!result && nextStepExists && ifFailed.canKick()) {
+                if (tryToKick(nextStep)) return;
+            }
+            if (!result && ifFailed.canRepeat()) {
+                tryRepeat();
                 return;
             }
         }
@@ -129,6 +152,21 @@ public class Ant {
             //done
         }
 
+    }
+
+    private void tryRepeat() {
+        nextTarget.restart();
+        doStep(IfStepFailed.CANCEL);
+    }
+
+    private boolean tryToKick(FieldPoint nextStep) {
+        boolean wasMovedOut = mover.kickOurAntAt(nextStep);
+        if (wasMovedOut) {
+            Logger.log(" kicked out!");
+            doStep(IfStepFailed.REPEAT);
+            return true;
+        }
+        return false;
     }
 
     public boolean isBusy() {

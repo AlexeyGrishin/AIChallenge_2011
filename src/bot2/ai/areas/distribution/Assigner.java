@@ -10,7 +10,7 @@ public class Assigner implements Distributor {
     public static final NotDistributedHandler SEND_TO_NEAREST = new NotDistributedHandler() {
         public void distribute(Collection<AreaWalker> walkers) {
             for (AreaWalker walker : walkers) {
-                List<DistributableArea> nearAreas = new ArrayList<DistributableArea>(walker.getDestinationArea().getNearestAreas());
+                List<DistributableArea> nearAreas = new ArrayList<DistributableArea>(walker.getLocation().getNearestAreas());
                 if (!nearAreas.isEmpty()) {
                     Collections.sort(nearAreas);
                     walker.moveTo(nearAreas.get(0));
@@ -31,9 +31,10 @@ public class Assigner implements Distributor {
         for (AreaWalker walker: walkers) {
             if (!walker.isInMove()) {
                 freeWalkers.add(walker);
+                alreadyServedAreas.add(walker.getLocation());
             }
             else {
-                alreadyServedAreas.add(walker.getDestinationArea());
+                alreadyServedAreas.addAll(walker.getDestinationAreas());
             }
         }
         List<ReqArea> reqAreas = new LinkedList<ReqArea>();
@@ -54,6 +55,7 @@ public class Assigner implements Distributor {
 
         while (!reqAreas.isEmpty() && !freeWalkers.isEmpty()) {
             ReqArea next = reqAreas.remove(0);
+            Logger.log(" Area: " + next);
             AreaWalker nearestWalker = findNearestWalker(freeWalkers, next);
             if (nearestWalker != null) {
                 nearestWalker.moveTo(next.area);
@@ -65,7 +67,7 @@ public class Assigner implements Distributor {
 
             }
             else {
-                Logger.log("Cannot find any walker for area " + next.area);
+                Logger.log("   Cannot find any walker for area " + next.area);
             }
             if (reqAreas.isEmpty()) {
                 Logger.log("  Some areas require more ants, reiterate: " + postponedReqAreas);
@@ -84,10 +86,9 @@ public class Assigner implements Distributor {
     }
 
     private AreaWalker findNearestWalker(List<AreaWalker> freeWalkers, ReqArea reqArea) {
-        //TODO: здесь тоже надо бы считать текущее местоположение, а не результат
         Map<DistributableArea, AreaWalker> walkersAreas = new HashMap<DistributableArea, AreaWalker>();
         for (AreaWalker walker: freeWalkers) {
-            walkersAreas.put(walker.getDestinationArea(), walker);
+            walkersAreas.put(walker.getLocation(), walker);
         }
         Set<DistributableArea> visited = new HashSet<DistributableArea>();
         List<DistributableArea> toProcess = new LinkedList<DistributableArea>();

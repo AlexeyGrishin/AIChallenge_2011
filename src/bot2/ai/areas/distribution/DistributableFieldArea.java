@@ -16,7 +16,7 @@ public class DistributableFieldArea implements DistributableArea {
 
     public Collection<DistributableArea> getNearestAreas() {
         List<DistributableArea> nearAreas = new ArrayList<DistributableArea>(4);
-        for (FieldArea area: this.area.getNearAreasCollection()) {
+        for (FieldArea area: this.area.getNearAreas()) {
             nearAreas.add(new DistributableFieldArea(area));
         }
         return nearAreas;

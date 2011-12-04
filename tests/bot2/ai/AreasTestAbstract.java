@@ -31,7 +31,7 @@ public class AreasTestAbstract {
         when(strategy.shallRevisit(any(FieldArea.class))).thenReturn(true);
     }
 
-    protected void assertAreas(FieldArea[] nearAreas, List<FieldPoint> markedPoints) {
+    protected void assertAreas(Iterable<? extends FieldArea> nearAreas, List<FieldPoint> markedPoints) {
         List<FieldPoint> points = new ArrayList<FieldPoint>(markedPoints);
         field.logAreasMap();
         for (FieldArea area: nearAreas) {
@@ -41,7 +41,7 @@ public class AreasTestAbstract {
             }
         }
         if (!points.isEmpty()) {
-            fail("Following areas were expected but not found: " + points + " following found: " + Arrays.toString(nearAreas));
+            fail("Following areas were expected but not found: " + points + " following found: " + nearAreas);
         }
     }
 

@@ -15,6 +15,7 @@ import java.util.*;
 public class AI implements GameStrategy {
 
     private Assigner areasDistributor = new Assigner();
+    private Assigner areasDistributorUnreached = new Assigner();
     private BetweenTargetsDistributor<AreaWalker, FieldArea> antByAreasDistributor = new BetweenTargetsDistributor<AreaWalker, FieldArea>();
     private GameSettings settings;
 
@@ -58,9 +59,9 @@ public class AI implements GameStrategy {
         }
         List<AreaWalker> walkers = new ArrayList<AreaWalker>(freeAnts.size());
         for (Ant ant: freeAnts) {
-            FieldArea antsArea = getAntArea(ant, areas);
-            if (antsArea != null) {
-                walkers.add(new AntAreaWalker(ant, antsArea, wrapper));
+            AntAreaWalker walker = new AntAreaWalker(ant, wrapper, areas);
+            if (walker.getLocation() != null) {
+                walkers.add(walker);
             }
             else {
                 FieldArea targetArea = areas.getNearestUnknownArea(ant.getLocation());
@@ -70,29 +71,35 @@ public class AI implements GameStrategy {
                 ant.doReachArea(targetArea);
             }
         }
-        areasDistributor.setNotDistributedHandler(createNotDistributedHandler(areas, wrapper));
+        areasDistributor.setNotDistributedHandler(createNotDistributedHandler(areas, field));
         areasDistributor.distribute(distributableAreas, walkers);
 
     }
 
-    private NotDistributedHandler createNotDistributedHandler(final Areas areas, final AreaWrapper<FieldArea> wrapper) {
+    private NotDistributedHandler createNotDistributedHandler(final Areas areas, final Field field) {
         return new NotDistributedHandler() {
             public void distribute(Collection<AreaWalker> walkers) {
-                List<FieldArea> notReached = getNotReachedAreas(areas);
-                List<AreaWalker> freeWalkers = new ArrayList<AreaWalker>(walkers);
+                OnlyUnreachedRankedFieldAreaWrapper wrapper = new OnlyUnreachedRankedFieldAreaWrapper(
+                        new AreasPathHelper(field)
+                );
+                Collection<DistributableArea> notReached = wrapper.wrap(getNotReachedAreas(areas));//new ArrayList<DistributableArea>(areas.getCount());
+                /*boolean existingUnreached = false;
+                for (FieldArea area: areas.getAllAreas()) {
+                    if (area == null) break;
+                    if (!area.isReached()) {
+                        existingUnreached = true;
+                    }
+                    notReached.add(wrapper.wrap(area));
+                } */
                 if (!notReached.isEmpty()) {
                     Logger.log("Send not distributed ants to unreached areas");
-                    freeWalkers.clear();
-                    //TODO: тут надо считать дистанцию от текущего местоположения, а не от цели
-                    for (BetweenTargetsDistributor.SourceTarget<AreaWalker, FieldArea> st: antByAreasDistributor.distribute(walkers, notReached, createMeasurer(areas, wrapper))) {
-                        if (st.target != null)
-                            st.source.moveTo(wrapper.wrap(st.target));
-                        else
-                            freeWalkers.add(st.source);
+                    //TODO: ugly
+                    for (AreaWalker walker: walkers) {
+                        ((AntAreaWalker)walker).setWrapper(wrapper);
                     }
+                    areasDistributorUnreached.distribute(notReached, walkers);
                 }
-                if (!freeWalkers.isEmpty()) {
-                    Logger.log("Send not distributed ants to near areas - no unreached");
+                else {
                     Assigner.SEND_TO_NEAREST.distribute(walkers);
                 }
             }
@@ -113,7 +120,7 @@ public class AI implements GameStrategy {
     private BetweenTargetsDistributor.DistanceMeasurer<AreaWalker, FieldArea> createMeasurer(final Areas areas, final AreaWrapper<FieldArea> wrapper) {
         return new BetweenTargetsDistributor.DistanceMeasurer<AreaWalker, FieldArea>() {
             public int measureDistance(AreaWalker from, FieldArea to) {
-                FieldArea sourceArea = wrapper.unwrap(from.getDestinationArea());
+                FieldArea sourceArea = wrapper.unwrap(from.getLocation());
                 if (sourceArea == to) return 0;
                 int distance = areas.findPath(sourceArea, to).size();
                 if (distance == 0) {
@@ -124,83 +131,6 @@ public class AI implements GameStrategy {
         };
     }
 
-    private FieldArea getAntArea(Ant ant, Areas areas) {
-        FieldArea area = ant.getTargetArea();
-        if (area == null) {
-            area = areas.get(ant.getTargetPoint());
-        }
-        return area;
-    }
-
-    //TODO: remove
-    private void doInspectNewArea_old(List<Ant> freeAnts, Field field, Areas areas) {
-        List<FieldArea> willBeInspected = new ArrayList<FieldArea>();
-        for (Ant ant: new ArrayList<Ant>(freeAnts)) {
-            if (ant.isBusy()) {
-                freeAnts.remove(ant);
-                willBeInspected.add(ant.getTargetArea());
-            }
-        }
-        for (Ant ant: freeAnts) {
-            FieldArea area = areas.get(ant.getLocation());
-            List<FieldArea> nearestAreas;
-            FieldArea selected = null;
-            if (area != null) {
-                nearestAreas = new ArrayList<FieldArea>(area.getNearAreasCollection());
-                if (!willBeInspected.containsAll(nearestAreas))
-                    nearestAreas.removeAll(willBeInspected);
-                Collections.sort(nearestAreas, new Comparator<FieldArea>() {
-                    public int compare(FieldArea o1, FieldArea o2) {
-                        if (o2.isReached() && !o1.isReached())
-                            return -1;
-                        if (!o2.isReached() && o1.isReached())
-                            return 1;
-                        /*int res = o2.getDistanceToHill() - o1.getDistanceToHill();
-                        if (res == 0)
-                            res = -(o1.getStat().getAlies() - o2.getStat().getAlies());*/
-                        /*return res;*/
-                        int res = -(o1.getStat().getVisitedTurnsAgo()*o1.getStat().getOpened() - o2.getStat().getVisitedTurnsAgo()*o2.getStat().getOpened());
-                        if (res == 0) {
-                            res = o1.getStat().getOpened() - o2.getStat().getOpened();
-                        }
-                        /*if (res == 0) {
-                            res = -(o1.getStat().getAlies() - o2.getStat().getAlies());
-                        } */
-                        if (res == 0) {
-                            res = o2.getDistanceToHill() - o1.getDistanceToHill();
-                        }
-                        return res;
-                    }
-                });
-                logAreasToSelect(ant, nearestAreas);
-                if (!nearestAreas.isEmpty()) {
-                    selected = nearestAreas.get(0);
-                }
-                else {
-                    Logger.log("WARN: " + ant + " was unable to find near areas for " + area);
-                }
-            }
-            else {
-                selected = areas.getNearestUnknownArea(ant.getLocation());
-            }
-
-            if (selected != null) {
-                ant.doReachArea(selected);
-                willBeInspected.add(selected);
-            }
-            else {
-                Logger.log("WARN: " + ant + " was unabled to find the area to reach O_o");
-            }
-
-        }
-    }
-
-    private void logAreasToSelect(Ant ant, List<FieldArea> nearestAreas) {
-        Logger.log(ant + ": select next areas to go: " + nearestAreas);
-        for (FieldArea area: nearestAreas) {
-            Logger.log(area + ": " + area.getStat());
-        }
-    }
 
     private void doGatherFood(List<Ant> freeAnts, Field field) {
         List<FieldPoint> assignedFood = new ArrayList<FieldPoint>();

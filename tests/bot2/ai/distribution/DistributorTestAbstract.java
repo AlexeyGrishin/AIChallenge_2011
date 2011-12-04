@@ -10,6 +10,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
@@ -58,7 +59,8 @@ public abstract class DistributorTestAbstract {
 
     protected AreaWalker createWalker(DistributableArea area) {
         AreaWalker walker = mock(AreaWalker.class);
-        when(walker.getDestinationArea()).thenReturn(area);
+        when(walker.getDestinationAreas()).thenReturn(Arrays.asList(area));
+        when(walker.getLocation()).thenReturn(area);
         createdWalkers.add(walker);
         return walker;
     }

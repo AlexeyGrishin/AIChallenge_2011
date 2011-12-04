@@ -147,10 +147,10 @@ public class EvenDistributorTest extends DistributorTestAbstract {
         AreaWalker w1 = createWalker(area1);
         doDistribute();
         verify(w1).moveTo(area2);
-        when(w1.getDestinationArea()).thenReturn(area2);
+        when(w1.getDestinationAreas()).thenReturn(area2);
         doDistribute();
         verify(w1).moveTo(area3);
-        when(w1.getDestinationArea()).thenReturn(area3);
+        when(w1.getDestinationAreas()).thenReturn(area3);
         doDistribute();
         verify(w1).moveTo(area4);
     } */

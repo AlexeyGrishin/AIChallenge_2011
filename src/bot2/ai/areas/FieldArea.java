@@ -11,8 +11,8 @@ public class FieldArea {
     private int number;
     private boolean reached = false;
     private FieldPoint center;
-    private FieldArea[] nearAreas = new FieldArea[4];
-    private ArrayList<FieldArea> nearAreasCollection = null;
+    private FieldArea[] nearAreasByDirection = new FieldArea[4];
+    private ArrayList<FieldArea> nearAreas = new ArrayList<FieldArea>(8);
     private FieldAreaStat stat = new FieldAreaStat(this);
     private FieldAreaKind kind = FieldAreaKind.NOT_VISITED;
     private AreaHelper helper;
@@ -54,39 +54,33 @@ public class FieldArea {
     }
 
     public void addNearestArea(Direction dir, FieldArea area) {
-        if (nearAreas[dir.ordinal()] != area) {
-            nearAreas[dir.ordinal()] = area;
-            area.addNearestArea(dir.opposite(), this);
-            nearAreasCollection = null;
-        }
+        doAddArea(dir, area);
+        area.doAddArea(dir.opposite(), this);
     }
 
-    public FieldArea[] getNearAreas() {
+    private boolean doAddArea(Direction dir, FieldArea area) {
+        boolean wasAdded = false;
+        if (!nearAreas.contains(area)) {
+            nearAreas.add(area);
+            wasAdded = true;
+        }
+        nearAreasByDirection[dir.ordinal()] = area;
+        return wasAdded;
+    }
+
+    public Collection<? extends FieldArea> getNearAreas() {
         return nearAreas;
     }
 
-    public Direction getDirectionTo(FieldArea area) {
-        for (Direction d: Direction.values()) {
-            if (nearAreas[d.ordinal()] == area)
-                return d;
-        }
-        return null;
-    }
-
-    public Collection<? extends FieldArea> getNearAreasCollection() {
-        if (nearAreasCollection == null) {
-            nearAreasCollection = new ArrayList<FieldArea>(4);
-            for (FieldArea n: nearAreas) {
-                if (n != null) {
-                    nearAreasCollection.add(n);
-                }
-            }
-        }
-        return nearAreasCollection;
-    }
-
+    /**
+     *
+     * @param direction
+     * @return latest added area in following direction.
+     *
+     * Do NOT use this method to iterate over all nearest collections! Use {@link #getNearAreas()} instead
+     */
     public FieldArea getNearArea(Direction direction) {
-        return nearAreas[direction.ordinal()];
+        return nearAreasByDirection[direction.ordinal()];
     }
 
     public FieldAreaStat getStat() {

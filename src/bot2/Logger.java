@@ -119,7 +119,7 @@ public class Logger {
             }
             areasStr.append("\"").append(area.getNumber()).append("\": {x: ").append(area.getCenter().x).append(", y: ").append(area.getCenter().y).append(", nearest: [");
             boolean firstN = true;
-            for (FieldArea n: area.getNearAreasCollection()) {
+            for (FieldArea n: area.getNearAreas()) {
                 areasStr.append(firstN ? "" : ",").append(n.getNumber());
                 firstN = false;
             }

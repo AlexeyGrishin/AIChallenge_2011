@@ -20,8 +20,10 @@ public class EvenDistributor implements Distributor {
         }
 
         for (AreaWalker walker: walkers) {
-            PrioritizedArea parea = priorAreas.get(walker.getDestinationArea());
-            parea.addWalker(walker);
+            for (DistributableArea area: walker.getDestinationAreas()) {
+                PrioritizedArea parea = priorAreas.get(area);
+                parea.addWalker(walker);
+            }
         }
 
         for (PrioritizedArea parea: priorAreas.values()) {

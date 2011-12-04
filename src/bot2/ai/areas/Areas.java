@@ -12,7 +12,7 @@ import pathfinder.PathsCache;
 
 import java.util.*;
 
-public class Areas implements UnhideListener, AreaHelper, HillsListener {
+public class Areas implements UnhideListener, AreaHelper, HillsListener, AreasMapper {
 
     private FieldArea[] areas = new FieldArea[Field.MAX_SIZE*Field.MAX_SIZE];
 

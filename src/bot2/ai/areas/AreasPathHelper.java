@@ -27,7 +27,7 @@ public class AreasPathHelper implements PointHelper<FieldArea> {
     }
 
     public Iterable<? extends FieldArea> getNearestCells(FieldArea coord) {
-        return coord.getNearAreasCollection();
+        return coord.getNearAreas();
     }
 
     public int getQuickDistanceBetween(FieldArea source, FieldArea target) {

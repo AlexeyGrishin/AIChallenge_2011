@@ -6,10 +6,15 @@ public interface AreaWalker {
 
     /**
      *
-     * @return area this walker walks to, or area it is currently in if it does not walk
+     * @return area this walker going to walk into near time. includes current location
      */
-    public DistributableArea getDestinationArea();
+    public Collection<DistributableArea> getDestinationAreas();
 
+    /**
+     *
+     * @return area this walker currenly on (or some very near area) - used to estimate distance
+     */
+    public DistributableArea getLocation();
     /**
      *
      * @return true if walker moves somewhere

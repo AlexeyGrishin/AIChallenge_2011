@@ -2,16 +2,13 @@ package bot2;
 
 import bot2.ai.*;
 import bot2.ai.areas.Areas;
-import bot2.ai.areas.AreasPathHelper;
 import bot2.ai.areas.FieldArea;
 import bot2.map.*;
 import bot2.map.areas.CircleArea;
-import pathfinder.PathFinder;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 
 import static bot2.Time.time;
@@ -49,7 +46,7 @@ public class Bot extends AbstractSystemInputParser implements MoveHelper {
     }
 
     private List<Integer> turnsToStop = Arrays.asList(
-            235
+            187
     );
 
     @Override
@@ -190,7 +187,7 @@ public class Bot extends AbstractSystemInputParser implements MoveHelper {
 
     public FieldArea getNextAreaOnWayTo(FieldPoint from, FieldArea targetArea) {
         FieldArea fromArea = areas.get(from);
-        if (fromArea == null || fromArea.getNearAreasCollection().contains(targetArea)) {
+        if (fromArea == null || fromArea.getNearAreas().contains(targetArea)) {
             return targetArea;
         }
         List<FieldArea> path = areas.findPath(fromArea, targetArea);
@@ -202,5 +199,18 @@ public class Bot extends AbstractSystemInputParser implements MoveHelper {
             return path.get(0);
         }
 
+    }
+
+    public boolean kickOurAntAt(FieldPoint point) {
+        if (field.getItem(point) == Item.ANT) {
+            for (Ant ant: ants) {
+                if (ant.getLocation().equals(point)) {
+                    Logger.log("  " + ant + " is on the way, try to kick it");
+                    ant.update();
+                    return !ant.getLocation().equals(point);
+                }
+            }
+        }
+        return false;
     }
 }
