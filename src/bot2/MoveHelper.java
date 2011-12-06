@@ -23,7 +23,15 @@ public interface MoveHelper {
      * @param point
      * @return true if ant was moved out, false - if not, or if there is no ant at the point
      */
-    boolean kickOurAntAt(FieldPoint point);
+    KickResult kickOurAntAt(FieldPoint point);
+
+    enum KickResult {
+        KICKED_OUT,
+        NOT_KICKED,
+        RECUSRIVE_KICK
+    }
 
     boolean isItemMoving(FieldPoint point);
+
+    void goingToWalkTo(FieldPoint nextLocation);
 }

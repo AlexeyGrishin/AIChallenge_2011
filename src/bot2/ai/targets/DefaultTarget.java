@@ -8,15 +8,15 @@ import pathfinder.PathFinder;
 import pathfinder.PointHelper;
 
 import java.util.LinkedList;
-import java.util.List;
 
 public abstract class DefaultTarget implements Target {
 
     private View view;
     private FieldPoint target;
-    private List<PathFinder.PathElement<FieldPoint>> path;
+    private LinkedList<PathFinder.PathElement<FieldPoint>> path;
     private PointHelper<FieldPoint> helper;
     private boolean unreachable = false;
+    private PathFinder.PathElement<FieldPoint> lastStep;
 
     public DefaultTarget(FieldPoint target, View view) {
         this.target = target;
@@ -37,19 +37,20 @@ public abstract class DefaultTarget implements Target {
 
     protected abstract boolean isTargetFound(FieldPoint location);
 
-    public FieldPoint getNestStep(FieldPoint location) {
+    public FieldPoint nextStep(FieldPoint location) {
         if (!hasPath()) {
             initPath(location);
         }
         if (hasPath()) {
-            PathFinder.PathElement<FieldPoint> next = path.remove(0);
+            PathFinder.PathElement<FieldPoint> next = path.removeFirst();
+            lastStep = next;
             if (next.from.equals(location)) {
                 return next.to;
             }
             else {
                 path = null;
                 if (shallContinueOnPathProblems(location, next.from))
-                    return getNestStep(location);
+                    return nextStep(location);
             }
         }
         //very strange, probably unreachable
@@ -59,8 +60,20 @@ public abstract class DefaultTarget implements Target {
         return null;
     }
 
+    public FieldPoint predictNextStep() {
+        return hasPath() ? path.get(0).to : null;
+    }
+
     public void restart() {
         path = null;
+    }
+
+    public void stepBack() {
+        if (lastStep != null && hasPath()) {
+            path.addFirst(lastStep);
+            lastStep = null;
+        }
+
     }
 
     protected boolean shallContinueOnPathProblems(FieldPoint location, FieldPoint expected) {

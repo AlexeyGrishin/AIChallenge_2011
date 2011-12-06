@@ -15,7 +15,7 @@ public class VisibleAreaPathHelper implements PointHelper<FieldPoint> {
     }
 
     public int getCost(FieldPoint coord) {
-        return 1;
+        return field.hasOurHill(coord) ? 10 : 1;
     }
 
     public int getDefaultCost() {

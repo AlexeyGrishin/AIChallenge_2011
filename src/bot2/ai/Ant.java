@@ -23,9 +23,14 @@ public class Ant {
         return skipSteps > 0;
     }
 
+    public void cancelSkipping() {
+        skipSteps = 0;
+    }
+
     enum IfStepFailed {
         KICK_OR_REPEAT,
         REPEAT,
+        REPEAT_NO_WAIT,
         CANCEL;
 
         public boolean canKick() {
@@ -33,7 +38,11 @@ public class Ant {
         }
 
         public boolean canRepeat() {
-            return this == REPEAT || this == KICK_OR_REPEAT;
+            return this == REPEAT || this == KICK_OR_REPEAT || this == REPEAT_NO_WAIT;
+        }
+
+        public boolean canWait() {
+            return this == KICK_OR_REPEAT || this == REPEAT;
         }
     }
 
@@ -59,7 +68,11 @@ public class Ant {
         if (!moved && mover.canMoveTo(target)) {
             FieldPoint oldLocation = location;
             location = mover.move(oldLocation, target);
+            log(" walked into " + location);
             moved = !oldLocation.equals(location);
+            if (moved && nextTarget != null) {
+                mover.goingToWalkTo(nextTarget.predictNextStep());
+            }
             return moved;
         }
         return false;
@@ -138,10 +151,14 @@ public class Ant {
         Logger.log(this + ": " + str);
     }
 
-    public void update() {
+    /**
+     *
+     * @return false if already in update (recursive)
+     */
+    public boolean update() {
         if (inUpdate) {
             log("Already in update");
-            return;
+            return false;
         }
         inUpdate = true;
         try {
@@ -150,23 +167,31 @@ public class Ant {
         finally {
             inUpdate = false;
         }
+        return true;
     }
 
     private void doStep(IfStepFailed ifFailed) {
+        doStep(ifFailed, null);
+    }
+
+    private void doStep(IfStepFailed ifFailed, FieldPoint nextStep) {
         if (nextTarget != null && !nextTarget.isReached(location) && !moved) {
             log("Perform target: " + nextTarget);
             if (isSkippingStep()) {
                 log(" Skip step");
             }
-            FieldPoint nextStep = nextTarget.getNestStep(location);
+            if (nextStep == null) {
+                nextStep = nextTarget.nextStep(location);
+            }
             boolean nextStepExists = nextStep != null;
             boolean result = nextStepExists && move(nextStep);
             if (!result && nextStepExists && ifFailed.canKick()) {
                 if (tryToKick(nextStep)) return;
             }
-            if (!result && mover.isItemMoving(nextStep)) {
-                skipSteps = 2;
+            if (!result && mover.isItemMoving(nextStep) && ifFailed.canWait()) {
+                skipSteps = 0;
                 log("  Skip step");
+                nextTarget.stepBack();
                 return;
             }
             if (!result && ifFailed.canRepeat()) {
@@ -188,11 +213,18 @@ public class Ant {
     }
 
     private boolean tryToKick(FieldPoint nextStep) {
-        boolean wasMovedOut = mover.kickOurAntAt(nextStep);
-        if (wasMovedOut) {
-            Logger.log(" kicked out!");
-            doStep(IfStepFailed.REPEAT);
-            return true;
+        MoveHelper.KickResult result = mover.kickOurAntAt(nextStep);
+        switch (result) {
+            case KICKED_OUT:
+                log(" Ant at " + nextStep + " kicked out!");
+                nextTarget.stepBack();
+                doStep(IfStepFailed.REPEAT);
+                return true;
+            case RECUSRIVE_KICK:
+                log(" Recursive kick, moving out");
+                nextTarget.stepBack();
+                doStep(IfStepFailed.REPEAT_NO_WAIT);
+                return true;
         }
         return false;
     }

@@ -217,14 +217,17 @@ public class Bot extends AbstractSystemInputParser implements MoveHelper {
 
     }
 
-    public boolean kickOurAntAt(FieldPoint point) {
+    public KickResult kickOurAntAt(FieldPoint point) {
         if (field.getItem(point) == Item.ANT) {
             Ant ant = findAnt(point);
             Logger.log("  " + ant + " is on the way, try to kick it");
-            ant.update();
-            return !ant.getLocation().equals(point);
+            ant.cancelSkipping();
+            boolean recursive = ant.update();
+            if (recursive)
+                return KickResult.RECUSRIVE_KICK;
+            return ant.getLocation().equals(point) ? KickResult.NOT_KICKED : KickResult.KICKED_OUT;
         }
-        return false;
+        return KickResult.NOT_KICKED;
     }
 
     private Ant findAnt(FieldPoint point) {
@@ -234,5 +237,9 @@ public class Bot extends AbstractSystemInputParser implements MoveHelper {
     public boolean isItemMoving(FieldPoint point) {
         Ant ant = findAnt(point);
         return ant == null || !ant.isSkippingStep();
+    }
+
+    public void goingToWalkTo(FieldPoint nextLocation) {
+
     }
 }

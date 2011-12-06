@@ -7,9 +7,13 @@ public interface Target {
 
     boolean isReached(FieldPoint location);
 
-    FieldPoint getNestStep(FieldPoint location);
+    FieldPoint nextStep(FieldPoint location);
+
+    FieldPoint predictNextStep();
 
     FieldPoint getTarget();
 
     void restart();
+
+    void stepBack();
 }
