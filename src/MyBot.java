@@ -14,6 +14,6 @@ public class MyBot {
      * @throws java.io.IOException if an I/O error occurs
      */
     public static void main(String[] args) throws IOException {
-        new Bot().readSystemInput();
+        new Bot().readInput(System.in);
     }
 }

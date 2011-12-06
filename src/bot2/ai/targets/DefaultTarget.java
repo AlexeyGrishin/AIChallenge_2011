@@ -1,7 +1,6 @@
 package bot2.ai.targets;
 
 import bot2.Logger;
-import bot2.map.Field;
 import bot2.map.FieldPoint;
 import bot2.map.Item;
 import bot2.map.View;
@@ -13,20 +12,20 @@ import java.util.List;
 
 public abstract class DefaultTarget implements Target {
 
-    private View field;
-    private FieldPoint point;
+    private View view;
+    private FieldPoint target;
     private List<PathFinder.PathElement<FieldPoint>> path;
     private PointHelper<FieldPoint> helper;
     private boolean unreachable = false;
 
-    public DefaultTarget(FieldPoint target, View field) {
-        this.point = target;
-        this.helper = field.producePointHelper();
-        this.field = field;
+    public DefaultTarget(FieldPoint target, View view) {
+        this.target = target;
+        this.helper = view.producePointHelper();
+        this.view = view;
     }
 
     private void initPath(FieldPoint from) {
-        PathFinder<FieldPoint> finder = new PathFinder<FieldPoint>(this.helper, from, point);
+        PathFinder<FieldPoint> finder = new PathFinder<FieldPoint>(this.helper, from, target);
         finder.findPath();
         this.path = new LinkedList<PathFinder.PathElement<FieldPoint>>(finder.getFoundPath());
     }
@@ -56,7 +55,7 @@ public abstract class DefaultTarget implements Target {
         //very strange, probably unreachable
         path = null;
         unreachable = true;
-        Logger.log("Target " + point + " seems to be unreachable from " + location + ", mark finished as unreachable");
+        Logger.log("Target " + target + " seems to be unreachable from " + location + ", mark finished as unreachable");
         return null;
     }
 
@@ -76,15 +75,19 @@ public abstract class DefaultTarget implements Target {
         return helper.getQuickDistanceBetween(location, getTarget());
     }
 
+    protected boolean seeTarget() {
+        return view.see(target);
+    }
+
     protected Item getTargetItem() {
-        return field.getItem(getTarget());
+        return view.getItem(getTarget());
     }
 
     public FieldPoint getTarget() {
-        return point;
+        return target;
     }
 
     public String toString() {
-        return getClass().getSimpleName() + ": " + point + ", " + (hasPath() ? "path remaining" + path : "no path") + ", " + (unreachable ? "unreachable": "reachable");
+        return getClass().getSimpleName() + ": " + target + ", " + (hasPath() ? "path remaining" + path : "no path") + ", " + (unreachable ? "unreachable": "reachable");
     }
 }

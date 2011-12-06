@@ -11,6 +11,8 @@ public class FieldAreaStat {
     private int enemiesSeenTurnsAgo;
 
     private FieldArea area;
+    private AreaHelper helper;
+    private int visitRank;
 
     public FieldAreaStat(FieldArea area) {
         this.area = area;
@@ -21,12 +23,18 @@ public class FieldAreaStat {
         alies = 0;
         food = 0;
         visitedTurnsAgo++;
+        updateRank();
         enemiesSeenTurnsAgo++;
+    }
+
+    private void updateRank() {
+        visitRank = helper.getVisitRank(visitedTurnsAgo);
     }
 
     public void addAnt() {
         alies++;
         visitedTurnsAgo = 0;
+        updateRank();
         walkingTotal++;
     }
 
@@ -55,6 +63,10 @@ public class FieldAreaStat {
         return visitedTurnsAgo;
     }
 
+    public int getVisitRank() {
+        return visitRank;
+    }
+
     public int getFood() {
         return food;
     }
@@ -77,5 +89,9 @@ public class FieldAreaStat {
 
     public String toString() {
         return "visitedAgo: " + visitedTurnsAgo;
+    }
+
+    public void setHelper(AreaHelper helper) {
+        this.helper = helper;
     }
 }

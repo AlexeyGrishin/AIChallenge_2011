@@ -1,6 +1,7 @@
 package bot2;
 
 import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * Handles system input stream reading.
@@ -12,10 +13,10 @@ public abstract class AbstractSystemInputReader {
      * 
      * @throws java.io.IOException if an I/O error occurs
      */
-    public void readSystemInput() throws IOException {
+    public void readInput(InputStream stream) throws IOException {
         StringBuilder line = new StringBuilder();
         int c;
-        while ((c = System.in.read()) >= 0) {
+        while ((c = stream.read()) >= 0) {
             if (c == '\r' || c == '\n') {
                 processLine(line.toString().toLowerCase().trim());
                 line.setLength(0);

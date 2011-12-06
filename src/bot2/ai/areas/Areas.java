@@ -2,6 +2,7 @@ package bot2.ai.areas;
 
 import bot2.GameSettings;
 import bot2.Logger;
+import bot2.ai.Ant;
 import bot2.ai.GameStrategy;
 import bot2.ai.HillsListener;
 import bot2.map.*;
@@ -31,6 +32,8 @@ public class Areas implements UnhideListener, AreaHelper, HillsListener, AreasMa
     private AreaDistanceCalculator calculator = new AreaDistanceCalculator();
     private GameStrategy strategy;
     private PathsCache<FieldArea> fieldPathsCache;
+    private CircleArea viewArea;
+    private CircleArea doubleViewArea;
 
     public Areas(Field field, GameSettings settings, GameStrategy strategy) {
         this.field = field;
@@ -45,24 +48,27 @@ public class Areas implements UnhideListener, AreaHelper, HillsListener, AreasMa
         fieldPathsCache = new PathsCache<FieldArea>(new DefaultPathFinder<FieldArea>(
                 new AreasPathHelper(field)
         ));
+        viewArea = new CircleArea(field, settings.getViewRadius2());
+        doubleViewArea = new CircleArea(field, settings.getViewRadius2() * 4);
+
     }
 
-    public FieldArea getNearestArea(FieldPoint p) {
+    public FieldArea getNearestArea(Ant p) {
         return getNearestArea(p, false);
     }
 
 
-    public FieldArea getNearestUnknownArea(FieldPoint p) {
+    public FieldArea getNearestUnknownArea(Ant p) {
         return getNearestArea(p, true);
     }
 
-    private FieldArea getNearestArea(FieldPoint p, boolean unknownOnly) {
+    private FieldArea getNearestArea(Ant p, boolean unknownOnly) {
         FieldArea nearestArea = null;
         long minLength = -1;
         for (FieldArea area: areas) {
             if (area == null) break;
             if (unknownOnly && area.isReached()) continue;
-            long length = field.getDistance2(area.getCenter(), p);
+            long length = field.getDistance2(area.getCenter(), p.getLocation());
             if (length < minLength || minLength == -1) {
                 minLength = length;
                 nearestArea = area;
@@ -123,17 +129,34 @@ public class Areas implements UnhideListener, AreaHelper, HillsListener, AreasMa
 
     public void onAreaReached(FieldArea area) {
         if (area.isReached()) return;
-        List<FieldArea> newAreasAdded = new ArrayList<FieldArea>(4);
         FieldPoint center = area.getCenter();
-        Collection<FieldPoint> reachableAreaPoints = reachableFilter.filter(
-                new CircleArea(field, settings.getViewRadius2()).getPoints(center),
-                center
+        ReachableFiltrationResult rfr = new ReachableFilter(field).getResult(
+                viewArea.getPoints(center),
+                center,
+                viewRadius*2
         );
+        Collection<FieldPoint> reachableAreaPoints = rfr.getReachablePoints();
         markAreaPoints(area, reachableAreaPoints);
         area.setReached();
+        //if (thereAreUnknownPointsInTheArea(reachableAreaPoints)) return;
         removeFromSet(areaPerX, center.x, area);
         removeFromSet(areaPerY, center.y, area);
-        for (Direction dir: Direction.values()) {
+        Direction[] directionsToAnalyze = Direction.values();
+        area.setReachableAreaPoints(reachableAreaPoints);
+        analyzeDirections(area, directionsToAnalyze);
+        for (FieldArea.PreliminaryLink link: area.getPreliminaryLinks()) {
+            //if (!area.getNearAreas().contains(link.fromArea)) {
+            if (get(link.point) != area) {
+                analyzeDirections(link.fromArea, link.direction);
+            }
+        }
+    }
+
+    private void analyzeDirections(FieldArea area, Direction... directionsToAnalyze) {
+        FieldPoint center = area.getCenter();
+        Collection<FieldPoint> reachableAreaPoints = area.getReachableAreaPoints();
+        List<FieldArea> newAreasAdded = new ArrayList<FieldArea>(4);
+        for (Direction dir: directionsToAnalyze) {
             FieldPoint anotherPoint = getReachablePoint(center, area.getNumber(), dir, reachableAreaPoints);
             if (anotherPoint != null) {// && field.getDistance2(area.getCenter(), anotherPoint) >= halfRadius2) {
                 int anotherAreaNr = getPreliminaryArea(anotherPoint);
@@ -142,9 +165,19 @@ public class Areas implements UnhideListener, AreaHelper, HillsListener, AreasMa
                     if (anotherArea == null) {
                         anotherArea = addNewArea(anotherPoint);
                         newAreasAdded.add(anotherArea);
-                    }
-                    if (!anotherArea.isReached()) {
                         area.addNearestArea(dir, anotherArea);
+                    }
+                    else if (anotherArea.isReached()) {
+                        //check centers are reachable
+                        HashSet<FieldPoint> points = new HashSet<FieldPoint>();
+                        points.addAll(viewArea.getPoints(area.getCenter()));
+                        points.addAll(viewArea.getPoints(anotherArea.getCenter()));
+                        if (reachableFilter.filter(points, area.getCenter()).contains(anotherArea.getCenter())) {
+                            area.addNearestArea(dir, anotherArea);
+                        }
+                    }
+                    else {
+                        anotherArea.addPreliminaryLink(anotherPoint, area, dir);
                     }
                 }
             }
@@ -155,7 +188,16 @@ public class Areas implements UnhideListener, AreaHelper, HillsListener, AreasMa
         }
     }
 
-    private int getPreliminaryArea(FieldPoint anotherPoint) {
+    private boolean thereAreUnknownPointsInTheArea(Collection<FieldPoint> reachableAreaPoints) {
+        for (FieldPoint point: reachableAreaPoints) {
+            if (field.getItem(point) == Item.UNKNOWN) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public int getPreliminaryArea(FieldPoint anotherPoint) {
         int area = field.getArea(anotherPoint.x, anotherPoint.y);
         int preliminaryArea = areasPreliminary[anotherPoint.x][anotherPoint.y];
         if (area == 0 && preliminaryArea == 0) {
@@ -233,7 +275,7 @@ public class Areas implements UnhideListener, AreaHelper, HillsListener, AreasMa
 
     private FieldPoint getReachablePoint(FieldPoint from, int area, Direction direction, Collection<FieldPoint> reachableAreaPoints) {
         FieldPoint target = null;
-        Quadrant quadrant = new Quadrant(field, new CircleArea(field, settings.getViewRadius2()), from, direction);
+        Quadrant quadrant = new Quadrant(field, viewArea, from, direction);
         while ((target = quadrant.getNextPoint()) != null) {
             if (reachableAreaPoints.contains(target)) {
                 break;
@@ -296,6 +338,10 @@ public class Areas implements UnhideListener, AreaHelper, HillsListener, AreasMa
 
     public boolean shallRevisit(FieldArea area) {
         return strategy.shallRevisit(area);
+    }
+
+    public int getVisitRank(int visitedAgo) {
+        return strategy.getVisitRank(visitedAgo);
     }
 
     public void onOurHill(FieldPoint point) {

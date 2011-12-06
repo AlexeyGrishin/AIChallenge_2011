@@ -81,6 +81,9 @@ public class PathsCache<C> {
         for (PathFinder.PathElement<C> element: foundPath) {
             path.add(element.to);
         }
+        if (path.get(path.size()-1) != to) {
+            path.add(to);
+        }
         return path;
     }
 

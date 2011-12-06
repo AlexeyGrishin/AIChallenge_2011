@@ -15,7 +15,7 @@ import static org.mockito.Mockito.*;
 public class PathsCacheTest {
 
     public static final int FIRST_POINT = 2;
-    public static final int SECOND_POINT = 3;
+    public static final int SECOND_POINT = 5;
     private @Mock SimplePathFinder<Integer> finder;
     private PathsCache<Integer> cache;
 

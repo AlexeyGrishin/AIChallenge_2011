@@ -224,7 +224,7 @@
                             "Enemies: " + area.enemies,
                             "Alies: " + area.alies,
                             "Total food: " + area.food,
-                            "Visited: " + area.visitedAgo + " turns ago"
+                            "Visited: " + area.visitedAgo + " turns ago" + ", rank=" + area.visitRank
                     ].join("<br/>");
                 }
                 else {
@@ -237,7 +237,8 @@
                 if (ant) {
                     return [
                             "Nr: " + ant.nr,
-                            "Target: " + ant.target
+                            "Target: " + ant.target + (ant.tax ? " at " + ant.tax + "," + ant.tay : ""),
+                            "Move to: " + (ant.tx ? ant.tx + "," + ant.ty : " nowhere")
                     ].join("<br/>");
                 }
                 else {

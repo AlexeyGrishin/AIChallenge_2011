@@ -13,7 +13,7 @@ import static org.mockito.Mockito.when;
 public class AreasTest extends AreasTestAbstract {
 
     @Before
-    public void setUp() {
+    public void setUp() throws IOException {
         super.setUp();
         when(settings.getViewRadius()).thenReturn(4);
         when(settings.getViewRadius2()).thenReturn(16);
@@ -41,10 +41,10 @@ public class AreasTest extends AreasTestAbstract {
     @Test
     public void complexAreas1() throws IOException {
         FieldArea cntr = createMapWithArea("tests/bot2/ai/areas.txt", 3);
-        field.logAreasMap();
         assertAreas(cntr.getNearAreas(), field.getMarkedPoints('?'));
 
     }
+
 
     @Test
     public void nearestAreas() throws IOException {

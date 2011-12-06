@@ -18,6 +18,7 @@ public class AI implements GameStrategy {
     private Assigner areasDistributorUnreached = new Assigner();
     private BetweenTargetsDistributor<AreaWalker, FieldArea> antByAreasDistributor = new BetweenTargetsDistributor<AreaWalker, FieldArea>();
     private GameSettings settings;
+    private int visitDivider;
 
     public void setSettings(GameSettings settings) {
         this.settings = settings;
@@ -60,15 +61,21 @@ public class AI implements GameStrategy {
         List<AreaWalker> walkers = new ArrayList<AreaWalker>(freeAnts.size());
         for (Ant ant: freeAnts) {
             AntAreaWalker walker = new AntAreaWalker(ant, wrapper, areas);
-            if (walker.getLocation() != null) {
-                walkers.add(walker);
+            if (!walker.isInMove()) {
+                if (walker.getLocation() != null) {
+                    walkers.add(walker);
+                }
+                else {
+                    FieldArea targetArea = areas.getNearestUnknownArea(ant);
+                    if (targetArea == null) {
+                        targetArea = areas.getNearestArea(ant);
+                    }
+                    ant.doExitUnknownArea(targetArea, areas);
+                }
             }
             else {
-                FieldArea targetArea = areas.getNearestUnknownArea(ant.getLocation());
-                if (targetArea == null) {
-                    targetArea = areas.getNearestArea(ant.getLocation());
-                }
-                ant.doReachArea(targetArea);
+                //it will be used to filter areas which will be visited soon
+                walkers.add(walker);
             }
         }
         areasDistributor.setNotDistributedHandler(createNotDistributedHandler(areas, field));
@@ -164,6 +171,11 @@ public class AI implements GameStrategy {
     }
 
     public boolean shallRevisit(FieldArea area) {
-        return area.getStat().getVisitedTurnsAgo() > settings.getViewRadius() * 4;
+        visitDivider = settings.getViewRadius() * 4;
+        return area.getStat().getVisitedTurnsAgo() > visitDivider;
+    }
+
+    public int getVisitRank(int visitedAgo) {
+        return visitedAgo / visitDivider;
     }
 }

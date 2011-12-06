@@ -5,6 +5,7 @@ import bot2.map.FieldPoint;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 public class FieldArea {
 
@@ -18,11 +19,26 @@ public class FieldArea {
     private AreaHelper helper;
     private int distanceToHill = -1;
     private boolean isOurHill = false, isEnemyHill = false;
+    private Collection<FieldPoint> reachableAreaPoints = null;
+    private List<PreliminaryLink> preliminaryLinks = new ArrayList<PreliminaryLink>();
+
+    static class PreliminaryLink {
+        public final FieldArea fromArea;
+        public final Direction direction;
+        public final FieldPoint point;
+
+        PreliminaryLink(FieldArea fromArea, Direction direction, FieldPoint point) {
+            this.fromArea = fromArea;
+            this.direction = direction;
+            this.point = point;
+        }
+    }
 
     public FieldArea(int number, FieldPoint center, AreaHelper helper) {
         this.number = number;
         this.center = center;
         this.helper = helper;
+        stat.setHelper(helper);
     }
 
     public void beforeUpdate() {
@@ -41,6 +57,14 @@ public class FieldArea {
         return number;
     }
 
+    public Collection<FieldPoint> getReachableAreaPoints() {
+        return reachableAreaPoints;
+    }
+
+    public void setReachableAreaPoints(Collection<FieldPoint> reachableAreaPoints) {
+        this.reachableAreaPoints = reachableAreaPoints;
+    }
+
     public void setReached() {
         reached = true;
     }
@@ -51,6 +75,14 @@ public class FieldArea {
 
     void setDistanceToHill(int distanceToHill) {
         this.distanceToHill = distanceToHill;
+    }
+
+    void addPreliminaryLink(FieldPoint point, FieldArea fromArea, Direction dir) {
+        preliminaryLinks.add(new PreliminaryLink(fromArea, dir, point));
+    }
+
+    public List<PreliminaryLink> getPreliminaryLinks() {
+        return preliminaryLinks;
     }
 
     public void addNearestArea(Direction dir, FieldArea area) {

@@ -106,6 +106,26 @@ public class AssignerTest extends DistributorTestAbstract {
         verify(w1).moveTo(area4);
     }
 
+
+    @Test
+    public void walkToNearestAreaIfSamePriority() {
+        DistributableArea area1 = createArea("area-1", 1, 1);
+        DistributableArea area2 = createArea("area-2", 0, 1);
+        DistributableArea area3 = createArea("area-3", 0, 1);
+        DistributableArea area4 = createArea("area-4", 1, 1);
+        when(area1.getNearestAreas()).thenReturn(Arrays.asList(area2));
+        when(area2.getNearestAreas()).thenReturn(Arrays.asList(area1, area3));
+        when(area3.getNearestAreas()).thenReturn(Arrays.asList(area2, area4));
+        when(area4.getNearestAreas()).thenReturn(Arrays.asList(area3));
+        AreaWalker walker = createWalker(area3);
+        doDistribute();
+        verify(walker).moveTo(area4);
+        createdWalkers.clear();
+        walker = createWalker(area2);
+        doDistribute();
+        verify(walker).moveTo(area1);
+    }
+
     public static class PriorityTest extends DistributorTestAbstract {
 
         private DistributableArea area1;

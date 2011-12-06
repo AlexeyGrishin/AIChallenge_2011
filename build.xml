@@ -43,12 +43,14 @@
         <exec dir="tools" executable="cmd" searchpath="tools">
             <arg value="/c"/>
             <arg path="tools/do-play-without-ui.cmd"/>
-            <arg path="tools/maps/real/cell_maze_p02_01.map"/>
+            <arg path="tools/maps/real/maze_02p_crazy.map"/>
             <arg value="--turns"/>
-            <arg value="300"/>
+            <arg value="500"/>
+            <arg value="--viewradius2"/>
+            <arg value="77"/>
+            <arg value="python sample_bots\python\HoldBot.py"/>
             <arg value="java -classpath ./my/last.jar MyBot"/>
-            <arg value="java -classpath ./my/Brain1.2.jar MyBot"/>
-            <!--arg value="python sample_bots\python\HoldBot.py"/-->
+            <!--arg value="java -classpath ./my/Brain1.2.jar MyBot"/-->
         </exec>
     </target>
 
@@ -59,7 +61,7 @@
             <arg path="tools/do-play-without-ui.cmd"/>
             <arg path="tools/maps/real/maze_02p_01.map"/>
             <arg value="java -classpath ./my/last.jar MyBot"/>
-            <arg value="java -classpath ./my/last.jar MyBot"/>
+            <arg value="java -classpath ./my/Brain2.0.jar MyBot"/>
             <!--arg value="python sample_bots\python\HunterBot.py"/-->
         </exec>
     </target>

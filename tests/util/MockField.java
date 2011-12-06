@@ -1,5 +1,8 @@
 package util;
 
+import bot2.Logger;
+import bot2.ai.Ant;
+import bot2.ai.areas.Areas;
 import bot2.map.Field;
 import bot2.map.FieldPoint;
 import bot2.map.Item;
@@ -8,10 +11,7 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -129,7 +129,7 @@ public class MockField extends Field {
         System.out.println();
     }
 
-    public void checkAllCovered(double acceptableNotCovered) {
+    public void checkAllCovered(double acceptableNotCovered, String mapFile, Areas areas) {
         List<FieldPoint> notCoveredAreas = new ArrayList<FieldPoint>();
         for (int row = 0; row < getRows(); row++) {
             for (int col = 0; col < getCols(); col++) {
@@ -140,14 +140,16 @@ public class MockField extends Field {
         }
         if (getCols() * getRows() * acceptableNotCovered < notCoveredAreas.size()) {
             logPoints(notCoveredAreas);
-            fail("Expected that all points are coverred, but following are not: " + notCoveredAreas);
+            Logger.logState(this, mapFile, areas, Collections.<Ant>emptyList());
+
+            fail(mapFile + ": " + "Expected that all points are coverred, but following are not: " + notCoveredAreas);
         }
     }
 
-    public void checkAreasAmount(int areas, int viewRadius, double overhead) {
+    public void checkAreasAmount(int areas, int viewRadius, double overhead, String mapFile) {
         int desiredAreas = (getCols() * getRows() / ((viewRadius/2) * (viewRadius/2)));
         double realOverhead = (areas - desiredAreas) / desiredAreas;
-        assertTrue("Desired: " + desiredAreas + " +- " + (desiredAreas * overhead) + ", but actual: " + areas, areas < desiredAreas || (realOverhead < overhead));
+        assertTrue(mapFile + ": " + "Desired: " + desiredAreas + " +- " + (desiredAreas * overhead) + ", but actual: " + areas, areas < desiredAreas || (realOverhead < overhead));
     }
 
     public void logPoints(List<FieldPoint> points) {
@@ -179,4 +181,5 @@ public class MockField extends Field {
             }
         }
     }
+
 }

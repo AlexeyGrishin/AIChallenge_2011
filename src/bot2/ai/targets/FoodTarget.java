@@ -15,7 +15,7 @@ public class FoodTarget extends DefaultTarget {
 
     @Override
     protected boolean isTargetFound(FieldPoint location) {
-        return getTargetItem() != Item.FOOD
+        return (seeTarget() && getTargetItem() != Item.FOOD)
                 || getQuickDistanceToTarget(location) <= 1;
     }
 

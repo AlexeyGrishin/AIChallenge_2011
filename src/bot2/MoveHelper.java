@@ -24,4 +24,6 @@ public interface MoveHelper {
      * @return true if ant was moved out, false - if not, or if there is no ant at the point
      */
     boolean kickOurAntAt(FieldPoint point);
+
+    boolean isItemMoving(FieldPoint point);
 }

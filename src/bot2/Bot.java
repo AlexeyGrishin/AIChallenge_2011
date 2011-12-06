@@ -7,9 +7,7 @@ import bot2.map.*;
 import bot2.map.areas.CircleArea;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 import static bot2.Time.time;
 
@@ -22,13 +20,14 @@ public class Bot extends AbstractSystemInputParser implements MoveHelper {
     private Orders orders = new Orders();
     private List<Ant> ants = new ArrayList<Ant>();
     private List<Ant> oldAnts = new ArrayList<Ant>();
+    private Map<FieldPoint, Ant> antsByPoints = new HashMap<FieldPoint, Ant>();
     private AI ai = new AI();
     private CircleArea visibleArea;
     private ReachableFilter reachableFilter;
     private Areas areas;
 
     public Bot() throws IOException {
-        //Logger.init();
+        Logger.init();
     }
 
     @Override
@@ -46,7 +45,7 @@ public class Bot extends AbstractSystemInputParser implements MoveHelper {
     }
 
     private List<Integer> turnsToStop = Arrays.asList(
-            187
+            24
     );
 
     @Override
@@ -64,6 +63,7 @@ public class Bot extends AbstractSystemInputParser implements MoveHelper {
         hills.beforeUpdate();
         areas.beforeUpdate();
         oldAnts = new ArrayList<Ant>(ants);
+        antsByPoints.clear();
         ants.clear();
     }
 
@@ -83,21 +83,24 @@ public class Bot extends AbstractSystemInputParser implements MoveHelper {
     private void addAnt(int x, int y) {
         boolean found = false;
         FieldPoint antPoint = FieldPoint.point(x, y);
+        Ant antAtPoint = null;
         for (Ant ant: oldAnts) {
             if (ant.getLocation().equals(antPoint)) {
-                ants.add(ant);
+                antAtPoint = ant;
                 oldAnts.remove(ant);
                 found = true;
                 break;
             }
         }
         if (!found) {
-            ants.add(new Ant(antPoint, this, new View(
+            antAtPoint = new Ant(antPoint, this, new View(
                     visibleArea,
                     field,
                     antPoint,
-                    reachableFilter)));
+                    reachableFilter));
         }
+        ants.add(antAtPoint);
+        antsByPoints.put(antPoint, antAtPoint);
     }
 
     @Override
@@ -164,6 +167,7 @@ public class Bot extends AbstractSystemInputParser implements MoveHelper {
         FieldPoint destination = field.getPoint(point, direction);
         if (field.getItem(destination).isPassable()) {
             field.moveItem(point, destination);
+            antsByPoints.put(destination, antsByPoints.remove(point));
             orders.addOrder(point, direction);
             return destination;
         }
@@ -196,21 +200,39 @@ public class Bot extends AbstractSystemInputParser implements MoveHelper {
             return null;
         }
         else {
-            return path.get(0);
+            long minDistance = field.getDistance2(from, path.get(0).getCenter());
+            int nr = 0;
+            for (int i = 1; i < path.size(); i++) {
+                long distance = field.getDistance2(from, path.get(i).getCenter());
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    nr = i;
+                }
+                else {
+                    break;
+                }
+            }
+            return path.get(nr);
         }
 
     }
 
     public boolean kickOurAntAt(FieldPoint point) {
         if (field.getItem(point) == Item.ANT) {
-            for (Ant ant: ants) {
-                if (ant.getLocation().equals(point)) {
-                    Logger.log("  " + ant + " is on the way, try to kick it");
-                    ant.update();
-                    return !ant.getLocation().equals(point);
-                }
-            }
+            Ant ant = findAnt(point);
+            Logger.log("  " + ant + " is on the way, try to kick it");
+            ant.update();
+            return !ant.getLocation().equals(point);
         }
         return false;
+    }
+
+    private Ant findAnt(FieldPoint point) {
+        return antsByPoints.get(point);
+    }
+
+    public boolean isItemMoving(FieldPoint point) {
+        Ant ant = findAnt(point);
+        return ant == null || !ant.isSkippingStep();
     }
 }

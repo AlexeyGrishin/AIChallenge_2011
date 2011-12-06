@@ -26,7 +26,7 @@ public class AreasTestAbstract {
     Areas areas;
 
     @Before
-    public void setUp() {
+    public void setUp() throws IOException {
         MockitoAnnotations.initMocks(this);
         when(strategy.shallRevisit(any(FieldArea.class))).thenReturn(true);
     }
@@ -37,6 +37,7 @@ public class AreasTestAbstract {
         for (FieldArea area: nearAreas) {
             if (area == null) continue;
             if (!points.remove(area.getCenter())) {
+                field.logPoints(Arrays.asList(area.getCenter()));
                 fail("Unexpected area: " + area.getCenter() + ", expected one of the following: " + markedPoints);
             }
         }
@@ -53,20 +54,22 @@ public class AreasTestAbstract {
         }
         areas = new Areas(field, settings, strategy);
         field.makeAllVisible();
-        FieldPoint markedPoint = field.getMarkedPoint('+');
-        if (markedPoint != null) {
+        FieldArea firstArea = null;
+        for (FieldPoint markedPoint: field.getMarkedPoints('+')) {
             FieldArea area = areas.addArea(markedPoint);
             areas.onAreaReached(area);
-            return area;
+            if (firstArea == null)
+                firstArea = area;
         }
-        return null;
+        return firstArea;
     }
 
     protected boolean processNextUnknownArea() {
-        FieldArea area = areas.getNearestUnknownArea(FieldPoint.point(0, 0));
-        if (area != null) {
-            areas.onAreaReached(area);
-            return true;
+        for (FieldArea area: areas.getAllAreas()) {
+            if (area != null && !area.isReached()) {
+                areas.onAreaReached(area);
+                return true;
+            }
         }
         return false;
     }

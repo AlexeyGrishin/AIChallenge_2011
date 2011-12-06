@@ -16,11 +16,20 @@ public class Logger {
 
     private static FileWriter fieldWrapper = null;
     private static FileWriter logger = null;
+    private static File field;
+    private static File log;
 
     public static void init() throws IOException {
-        fieldWrapper = new FileWriter(new File("q:/programming/java2/projects/aibot/logs/field.js"));
-        fieldWrapper.write("var Steps = [];\n");
-        logger = new FileWriter(new File("q:/programming/java2/projects/aibot/logs/log.txt"));
+        field = new File("q:/programming/java2/projects/aibot/logs/field.js");
+        if (field.getParentFile().exists()) {
+            fieldWrapper = new FileWriter(field);
+            fieldWrapper.write("var Steps = [];\n");
+            log = new File("q:/programming/java2/projects/aibot/logs/log.txt");
+            logger = new FileWriter(log);
+        }
+        else {
+            field = null;
+        }
     }
 
     public static void log(String str) {
@@ -37,7 +46,7 @@ public class Logger {
         }
     }
 
-    public static void logState(Field field, int turn, Areas areas, List<Ant> ants) {
+    public static void logState(Field field, Object turn, Areas areas, List<Ant> ants) {
         if (fieldLogEnabled()) {
             logField(field, turn);
             logAreas(areas);
@@ -67,8 +76,8 @@ public class Logger {
         fieldLog(targets.toString());
     }
 
-    private static void logField(Field field, int turn) {
-        String map = "Steps.push({turn: " + turn + ", cols: " + field.getCols() + ", rows: " + field.getRows() + ", field: [";
+    private static void logField(Field field, Object turn) {
+        String map = "Steps.push({turn: '" + turn + "', cols: " + field.getCols() + ", rows: " + field.getRows() + ", field: [";
         StringBuilder bld = new StringBuilder();
         for (int y = 0; y < field.getRows(); y++) {
             bld.append("\"");
@@ -127,6 +136,7 @@ public class Logger {
             areasStr.append("nr: ").append(area.getNumber()).append(", ");
             areasStr.append("kind: '").append(area.getKind()).append("', ");
             areasStr.append("visitedAgo: ").append(area.getStat().getVisitedTurnsAgo()).append(", ");
+            areasStr.append("visitRank: ").append(area.getStat().getVisitRank()).append(", ");
             areasStr.append("distance: ").append(area.getDistanceToHill()).append(", ");
             areasStr.append("enemies: ").append(area.getStat().getEnemies()).append(", ");
             areasStr.append("alies: ").append(area.getStat().getAlies()).append(", ");
@@ -168,5 +178,13 @@ public class Logger {
                 //ignore
             }
         }
+    }
+
+    public static File getLog() {
+        return log;
+    }
+
+    public static File getField() {
+        return field;
     }
 }

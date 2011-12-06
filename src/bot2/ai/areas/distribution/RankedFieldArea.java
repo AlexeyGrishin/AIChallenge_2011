@@ -92,10 +92,10 @@ public class RankedFieldArea implements DistributableArea {
     }
 
     static {
-        define(FieldAreaKind.NOT_VISITED, 0, FieldAreaComparators.DISTANCE_COMPARATOR);
+        define(FieldAreaKind.NOT_VISITED, 0, FieldAreaComparators.NULL_COMPARATOR);
         define(FieldAreaKind.VISITED_TIME_AGO, 1, FieldAreaComparators.VISITED_TIME_COMPARATOR);
         define(FieldAreaKind.JUST_ATTACKED, 2, FieldAreaComparators.DISTANCE_COMPARATOR);
-        define(FieldAreaKind.ENEMY_HILL, 3, FieldAreaComparators.DEFAULT_COMPARATOR);
+        define(FieldAreaKind.ENEMY_HILL, 3, FieldAreaComparators.NULL_COMPARATOR);
         define(FieldAreaKind.JUST_VISITED, Integer.MAX_VALUE, FieldAreaComparators.EMPTINESS_COMPARATOR);
     }
 

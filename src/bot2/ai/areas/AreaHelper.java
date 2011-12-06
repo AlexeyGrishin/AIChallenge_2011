@@ -8,4 +8,5 @@ public interface AreaHelper {
 
     public boolean shallRevisit(FieldArea area);
 
+    public int getVisitRank(int visitedAgo);
 }

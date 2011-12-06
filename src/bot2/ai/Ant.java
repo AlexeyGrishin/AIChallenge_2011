@@ -2,6 +2,7 @@ package bot2.ai;
 
 import bot2.Logger;
 import bot2.MoveHelper;
+import bot2.ai.areas.AreasMapper;
 import bot2.ai.areas.FieldArea;
 import bot2.ai.targets.*;
 import bot2.map.FieldPoint;
@@ -12,9 +13,14 @@ public class Ant {
     private int nr;
     private static int NR = 1;
     private boolean inUpdate = false;
+    private int skipSteps = 0;
 
     public int getNr() {
         return nr;
+    }
+
+    public boolean isSkippingStep() {
+        return skipSteps > 0;
     }
 
     enum IfStepFailed {
@@ -61,6 +67,7 @@ public class Ant {
 
     public void beforeTurn() {
         moved = false;
+        if (skipSteps > 0) skipSteps--;
         visibleView.setPoint(location);
     }
 
@@ -89,11 +96,24 @@ public class Ant {
         update();
     }
 
-    public void doReachArea(FieldArea area) {
+    public void doExitUnknownArea(FieldArea area, AreasMapper mapper) {
+        if (checkNullArea(area)) return;
+        log( ": Go to area " + area.getNumber() + " at " + area.getCenter() + " just to move out from unknown points");
+        targetArea = area;
+        nextTarget = new FindKnownArea(area, visibleView, mapper);
+        update();
+    }
+
+    private boolean checkNullArea(FieldArea area) {
         if (area == null) {
             log("Was sent to null area. I will just wait here");
-            return;
+            return true;
         }
+        return false;
+    }
+
+    public void doReachArea(FieldArea area) {
+        if (checkNullArea(area)) return;
         log( ": Go to area " + area.getNumber() + " at " + area.getCenter());
         targetArea = area;
         FieldArea nextArea = mover.getNextAreaOnWayTo(location, targetArea);
@@ -125,7 +145,6 @@ public class Ant {
         }
         inUpdate = true;
         try {
-            log("Perform target: " + nextTarget);
             doStep(IfStepFailed.KICK_OR_REPEAT);
         }
         finally {
@@ -135,11 +154,20 @@ public class Ant {
 
     private void doStep(IfStepFailed ifFailed) {
         if (nextTarget != null && !nextTarget.isReached(location) && !moved) {
+            log("Perform target: " + nextTarget);
+            if (isSkippingStep()) {
+                log(" Skip step");
+            }
             FieldPoint nextStep = nextTarget.getNestStep(location);
             boolean nextStepExists = nextStep != null;
             boolean result = nextStepExists && move(nextStep);
             if (!result && nextStepExists && ifFailed.canKick()) {
                 if (tryToKick(nextStep)) return;
+            }
+            if (!result && mover.isItemMoving(nextStep)) {
+                skipSteps = 2;
+                log("  Skip step");
+                return;
             }
             if (!result && ifFailed.canRepeat()) {
                 tryRepeat();

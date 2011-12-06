@@ -2,10 +2,13 @@ package bot2.ai.areas.distribution;
 
 import bot2.Logger;
 import bot2.Time;
+import bot2.ai.targets.Target;
 
 import java.util.*;
 
 public class Assigner implements Distributor {
+
+    public final static int FIRST = 0;
 
     public static final NotDistributedHandler SEND_TO_NEAREST = new NotDistributedHandler() {
         public void distribute(Collection<AreaWalker> walkers) {
@@ -13,7 +16,7 @@ public class Assigner implements Distributor {
                 List<DistributableArea> nearAreas = new ArrayList<DistributableArea>(walker.getLocation().getNearestAreas());
                 if (!nearAreas.isEmpty()) {
                     Collections.sort(nearAreas);
-                    walker.moveTo(nearAreas.get(0));
+                    walker.moveTo(nearAreas.get(FIRST));
                 }
             }
         }
@@ -47,28 +50,46 @@ public class Assigner implements Distributor {
             }
             if (reqArea.requirements > 0) {
                 reqAreas.add(reqArea);
-                Logger.log("  Area " + area + " need to be visited by " + reqArea.requirements + " ants");
             }
         }
 
         Collections.sort(reqAreas);
 
         while (!reqAreas.isEmpty() && !freeWalkers.isEmpty()) {
-            ReqArea next = reqAreas.remove(0);
-            Logger.log(" Area: " + next);
-            AreaWalker nearestWalker = findNearestWalker(freeWalkers, next);
-            if (nearestWalker != null) {
-                nearestWalker.moveTo(next.area);
-                freeWalkers.remove(nearestWalker);
-                next.onWalkIn();
-                if (next.stillHasRequirements()) {
-                    postponedReqAreas.add(next);
+            List<ReqArea> nextSamePriority = getNextSamePriority(reqAreas);
+            Logger.log(" Same priority areas: " + nextSamePriority);
+            List<NearestWalker> walkersForThem = new ArrayList<NearestWalker>(reqAreas.size());
+            for (ReqArea next: new ArrayList<ReqArea>(nextSamePriority)) {
+                Logger.log("  Area " + next + " need to be visited by " + next.requirements + " ants");
+                NearestWalker nearestWalker = findNearestWalker(freeWalkers, next);
+                if (nearestWalker != null) {
+                    walkersForThem.add(nearestWalker);
+                }
+                else {
+                    Logger.log("   Cannot find any walker for area " + next.area);
+                    nextSamePriority.remove(next);
+                }
+            }
+            Collections.sort(walkersForThem);
+            for (NearestWalker nearestWalker: walkersForThem) {
+                AreaWalker walker = nearestWalker.walker;
+                ReqArea target = nearestWalker.target;
+                if (freeWalkers.contains(walker)) {
+                    Logger.log("Send " + walker + " to " + target + ", distance = " + nearestWalker.distance);
+                    walker.moveTo(target.area);
+                    target.onWalkIn();
+                    freeWalkers.remove(walker);
+                    if (target.stillHasRequirements()) {
+                        postponedReqAreas.add(target);
+                    }
+                }
+                else {
+                    Logger.log("Planned to send " + walker + " to " + target + ", distance = " + nearestWalker.distance + ", but it was already sent somewhere" );
+                    postponedReqAreas.add(target);
                 }
 
             }
-            else {
-                Logger.log("   Cannot find any walker for area " + next.area);
-            }
+
             if (reqAreas.isEmpty()) {
                 Logger.log("  Some areas require more ants, reiterate: " + postponedReqAreas);
                 reqAreas.addAll(postponedReqAreas);
@@ -85,31 +106,82 @@ public class Assigner implements Distributor {
 
     }
 
-    private AreaWalker findNearestWalker(List<AreaWalker> freeWalkers, ReqArea reqArea) {
+    private List<ReqArea> getNextSamePriority(List<ReqArea> reqAreas) {
+        List<ReqArea> samePriority = new ArrayList<ReqArea>(reqAreas.size());
+        ReqArea last = null;
+        ReqArea next = reqAreas.get(FIRST);
+        while (last == null || last.compareTo(next) == 0) {
+            samePriority.add(next);
+            reqAreas.remove(FIRST);
+            if (reqAreas.isEmpty()) break;
+            last = next;
+            next = reqAreas.get(FIRST);
+        }
+        return samePriority;
+    }
+
+    private NearestWalker findNearestWalker(List<AreaWalker> freeWalkers, ReqArea reqArea) {
         Map<DistributableArea, AreaWalker> walkersAreas = new HashMap<DistributableArea, AreaWalker>();
         for (AreaWalker walker: freeWalkers) {
             walkersAreas.put(walker.getLocation(), walker);
         }
         Set<DistributableArea> visited = new HashSet<DistributableArea>();
         List<DistributableArea> toProcess = new LinkedList<DistributableArea>();
+        List<Integer> toProcessDistance = new LinkedList<Integer>();
         toProcess.add(reqArea.area);
+        toProcessDistance.add(0);
         while (!toProcess.isEmpty()) {
             DistributableArea area = toProcess.remove(0);
             if (visited.contains(area)) {
                 continue;
             }
+            int distance = toProcessDistance.remove(0);
             AreaWalker walker = walkersAreas.get(area);
             if (walker != null) {
-                return walker;
+                return new NearestWalker(walker, distance, reqArea);
             }
             visited.add(area);
             for (DistributableArea narea: area.getNearestAreas()) {
                 if (!visited.contains(narea)) {
                     toProcess.add(narea);
+                    toProcessDistance.add(distance + 1);
                 }
             }
         }
         return null;
+    }
+
+    class NearestWalker implements Comparable<NearestWalker> {
+        public final AreaWalker walker;
+        public final int distance;
+        public final ReqArea target;
+
+        NearestWalker(AreaWalker walker, int distance, ReqArea target) {
+            this.walker = walker;
+            this.distance = distance;
+            this.target = target;
+        }
+
+        public int compareTo(NearestWalker o) {
+            return distance - o.distance;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            NearestWalker that = (NearestWalker) o;
+
+            if (!walker.equals(that.walker)) return false;
+
+            return true;
+        }
+
+        @Override
+        public int hashCode() {
+            return walker.hashCode();
+        }
     }
 
     class ReqArea implements Comparable<ReqArea> {
