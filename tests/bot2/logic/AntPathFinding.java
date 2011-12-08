@@ -95,7 +95,7 @@ public class AntPathFinding {
         assertEquals(FieldPoint.point(9, 10), ant1.getLocation());
         assertEquals(FieldPoint.point(10, 10), ant2.getLocation());
         when(moveHelper.canMoveTo(FieldPoint.point(10, 10))).thenReturn(false).thenReturn(true);
-        when(moveHelper.kickOurAntAt(FieldPoint.point(10, 10))).thenReturn(true);
+        when(moveHelper.kickOurAntAt(FieldPoint.point(10, 10))).thenReturn(MoveHelper.KickResult.KICKED_OUT);
         doMove(ant1);
         assertEquals(FieldPoint.point(10, 10), ant1.getLocation());
     }

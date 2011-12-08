@@ -1,9 +1,12 @@
 package bot2;
 
+import bot.brain.*;
 import bot2.ai.*;
+import bot2.ai.Ant;
 import bot2.ai.areas.Areas;
 import bot2.ai.areas.FieldArea;
 import bot2.map.*;
+import bot2.map.View;
 import bot2.map.areas.CircleArea;
 
 import java.io.IOException;
@@ -11,7 +14,7 @@ import java.util.*;
 
 import static bot2.Time.time;
 
-public class Bot extends AbstractSystemInputParser implements MoveHelper {
+public class Bot extends AbstractSystemInputParser implements MoveHelper, AntLocator {
 
     private GameSettings settings;
     private Field field;
@@ -45,7 +48,7 @@ public class Bot extends AbstractSystemInputParser implements MoveHelper {
     }
 
     private List<Integer> turnsToStop = Arrays.asList(
-            24
+            132
     );
 
     @Override
@@ -167,6 +170,7 @@ public class Bot extends AbstractSystemInputParser implements MoveHelper {
         FieldPoint destination = field.getPoint(point, direction);
         if (field.getItem(destination).isPassable()) {
             field.moveItem(point, destination);
+            updateable.add(destination);
             antsByPoints.put(destination, antsByPoints.remove(point));
             orders.addOrder(point, direction);
             return destination;
@@ -241,5 +245,9 @@ public class Bot extends AbstractSystemInputParser implements MoveHelper {
 
     public void goingToWalkTo(FieldPoint nextLocation) {
 
+    }
+
+    public Ant getAnt(FieldPoint point) {
+        return findAnt(point);
     }
 }

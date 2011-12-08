@@ -14,6 +14,7 @@ public class Ant {
     private static int NR = 1;
     private boolean inUpdate = false;
     private int skipSteps = 0;
+    private Object attackFlag;
 
     public int getNr() {
         return nr;
@@ -25,6 +26,18 @@ public class Ant {
 
     public void cancelSkipping() {
         skipSteps = 0;
+    }
+
+    public void moveInBattle(FieldPoint point, Object debugFlag) {
+        log("  " + debugFlag);
+        this.attackFlag = debugFlag;
+        if (!point.equals(location)) {
+            move(point);
+        }
+        else {
+            log("  Stay out");
+            moved = true;
+        }
     }
 
     enum IfStepFailed {
@@ -82,6 +95,11 @@ public class Ant {
         moved = false;
         if (skipSteps > 0) skipSteps--;
         visibleView.setPoint(location);
+        attackFlag = null;
+    }
+
+    public Object getAttackFlag() {
+        return attackFlag;
     }
 
     public FieldPoint getLocation() {

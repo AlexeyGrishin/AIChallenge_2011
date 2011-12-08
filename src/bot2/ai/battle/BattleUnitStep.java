@@ -2,7 +2,7 @@ package bot2.ai.battle;
 
 public interface BattleUnitStep<P> {
 
-    BattleUnit getUnit();
+    BattleUnit<P> getUnit();
 
     /**
      *

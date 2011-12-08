@@ -6,11 +6,19 @@ import bot2.ai.areas.Areas;
 import bot2.ai.areas.AreasPathHelper;
 import bot2.ai.areas.FieldArea;
 import bot2.ai.areas.distribution.*;
+import bot2.ai.battle.Battle;
+import bot2.ai.battle.BattleCase;
+import bot2.ai.battle.BattleCaseResolution;
+import bot2.ai.battle.BattleStrategy;
 import bot2.map.Field;
 import bot2.map.FieldPoint;
 import bot2.map.Item;
 
+import java.beans.beancontext.BeanContext;
 import java.util.*;
+
+import static bot2.ai.battle.BattleStrategy.maxDamage;
+import static bot2.ai.battle.BattleStrategy.minLost;
 
 public class AI implements GameStrategy {
 
@@ -19,6 +27,7 @@ public class AI implements GameStrategy {
     private BetweenTargetsDistributor<AreaWalker, FieldArea> antByAreasDistributor = new BetweenTargetsDistributor<AreaWalker, FieldArea>();
     private GameSettings settings;
     private int visitDivider;
+    private Battle battle;
 
     public void setSettings(GameSettings settings) {
         this.settings = settings;
@@ -26,12 +35,20 @@ public class AI implements GameStrategy {
 
     public void doTurn(List<Ant> ants, Field field, Areas areas, Hills hills) {
         List<Ant> freeAnts = new ArrayList<Ant>(ants);
+        doBattle(field, freeAnts);
         doAttackVisibleHills(freeAnts, hills, field);
         doGatherFood(freeAnts, field);
         doInspectNewArea(freeAnts, field, areas);
         for (Ant ant: ants) {
             ant.update();
         }
+    }
+
+    private void doBattle(Field field, List<Ant> ants) {
+        if (battle == null) {
+            battle = new Battle(settings, field, this);
+        }
+        battle.process(ants);
     }
 
     private void doAttackVisibleHills(List<Ant> freeAnts, Hills hills, Field field) {
@@ -177,5 +194,28 @@ public class AI implements GameStrategy {
 
     public int getVisitRank(int visitedAgo) {
         return visitedAgo / visitDivider;
+    }
+
+    public BattleCase<FieldPoint> select(List<BattleCase<FieldPoint>> cases, List<FieldPoint> ours, List<FieldPoint> enemies) {
+        Logger.log("Resolute battle");
+        Logger.log("  Ours: " + ours);
+        Logger.log("  Enemies: " + enemies);
+        BattleCase<FieldPoint> res = resolute(cases, ours, enemies);
+        Logger.log("  -> " + res);
+        return res;
+    }
+
+    private BattleCase<FieldPoint> resolute(List<BattleCase<FieldPoint>> cases, List<FieldPoint> ours, List<FieldPoint> enemies) {
+        if (ours.size() > enemies.size()) {
+            return addFlag(maxDamage(cases), "Attack");
+        }
+        else {
+            return minLost(cases);
+        }
+    }
+
+    private BattleCase<FieldPoint> addFlag(BattleCase<FieldPoint> c, String flag) {
+        c.flag = flag;
+        return c;
     }
 }

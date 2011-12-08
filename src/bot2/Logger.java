@@ -61,6 +61,9 @@ public class Logger {
             targets.append("nr: ").append(ant.getNr()).append(", ");
             targets.append("x: ").append(ant.getLocation().x).append(", ");
             targets.append("y: ").append(ant.getLocation().y).append(", ");
+            if (ant.getAttackFlag() != null) {
+                targets.append("attack: '").append(ant.getAttackFlag()).append("', ");
+            }
             if (!ant.getTargetPoint().equals(ant.getLocation())) {
                 targets.append("target: \"").append(ant.getTargetName()).append("\", ");
                 targets.append("tx: ").append(ant.getTargetPoint().x).append(", ");

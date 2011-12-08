@@ -163,6 +163,15 @@
                 ctx.lineWidth = "1";
                 for (var i = 0; i < ants.length; i++) {
                     var ant = ants[i];
+                    if (ant.attack) {
+                        ctx.fillStyle = "red";
+                        ctx.beginPath();
+                        ctx.moveTo(ant.x*size, ant.y*size);
+                        ctx.lineTo(ant.x*size+size/2, ant.y*size);
+                        ctx.lineTo(ant.x, ant.y*size+size/2);
+                        ctx.fill();
+
+                    }
                     if (ant.tx) {
                         ctx.beginPath();
                         ctx.moveTo(ant.x*size + size/2, ant.y*size + size/2);
@@ -238,7 +247,8 @@
                     return [
                             "Nr: " + ant.nr,
                             "Target: " + ant.target + (ant.tax ? " at " + ant.tax + "," + ant.tay : ""),
-                            "Move to: " + (ant.tx ? ant.tx + "," + ant.ty : " nowhere")
+                            "Move to: " + (ant.tx ? ant.tx + "," + ant.ty : " nowhere"),
+                            "Attack: " + (ant.attack ? ant.attack : "no")
                     ].join("<br/>");
                 }
                 else {

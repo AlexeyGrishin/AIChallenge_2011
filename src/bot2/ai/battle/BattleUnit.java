@@ -9,4 +9,6 @@ public interface BattleUnit<P> {
      * @return
      */
     public List<BattleUnitStep<P>> getPossibleSteps();
+
+    public P getPoint();
 }
