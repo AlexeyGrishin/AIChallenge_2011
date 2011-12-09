@@ -40,7 +40,7 @@ public class Battle {
             pointsToAnts.put(ant.getLocation(), ant);
             if (antsInBattle.contains(ant.getLocation())) continue;
             if (ant.getVisibleView().getEnemiesCount() > 0) {
-                battles.add(doProcessAnt(ant, antsInBattle));
+                battles.addAll(doProcessAnt(ant, antsInBattle));
             }
         }
         Time.time.completed("Befor execution");
@@ -56,27 +56,49 @@ public class Battle {
         Time.time.completed("Execution");
     }
 
-    private BattleCase<FieldPoint> doProcessAnt(Ant ant, Collection<FieldPoint> antsInBattle) {
+    private Collection<BattleCase<FieldPoint>> doProcessAnt(Ant ant, Collection<FieldPoint> antsInBattle) {
+        Collection<BattleCase<FieldPoint>> decisions = new ArrayList<BattleCase<FieldPoint>>(4);
         Time.time.completed("Before detection");
         List<FieldPoint> enemiesInBattle = new ArrayList<FieldPoint>();
         List<FieldPoint> ourAntsInBattle = new ArrayList<FieldPoint>();
         detectEnemies(ant.getLocation(), ourAntsInBattle, enemiesInBattle);
-        if (enemiesInBattle.size() == 0) return null;
+        if (enemiesInBattle.size() == 0) return decisions;
         Time.time.completed("Detection");
-        List<BattleCase<FieldPoint>> res = predictor.predictBattle(toBattleUnits(ourAntsInBattle), toBattleUnits(enemiesInBattle), advisor);
-        Logger.log(res.toString());
-        Time.time.completed("Prediction");
-        BattleCase<FieldPoint> decision = strategy.select(res, ourAntsInBattle, enemiesInBattle);
+        SingleBattleStrategy str = strategy.getSingleBattleStrategy(ourAntsInBattle, enemiesInBattle);
+        for (List<FieldPoint> ourAnts: resort(ourAntsInBattle, str.maxGroupSize)) {
+            List<BattleCase<FieldPoint>> res = predictor.predictBattle(
+                    toBattleUnits(ourAnts, str.allowOurAntsToStand, false),
+                    toBattleUnits(enemiesInBattle, true, str.reviewOnlyStandEnemies), advisor);
+            Time.time.completed("Prediction");
+            if (isNotBattle(res)) {
+                Logger.log("Not a battle - no danger for our ants");
+                continue;
+            }
+            decisions.add(strategy.select(res, ourAnts, enemiesInBattle));
+            antsInBattle.addAll(ourAnts);
+        }
+        //Logger.log(res.toString());
 
-        antsInBattle.addAll(ourAntsInBattle);
         Time.time.completed("Resolution");
-        return decision;
+        return decisions;
     }
 
-    private List<BattleUnit<FieldPoint>> toBattleUnits(List<FieldPoint> points) {
+    private boolean isNotBattle(List<BattleCase<FieldPoint>> res) {
+        return res.size() == 1 && res.get(0).resolution.maxEnemiesLost == 0 && res.get(0).resolution.maxLost == 0;
+    }
+
+    private List<List<FieldPoint>> resort(List<FieldPoint> ourAntsInBattle, int maxGroupSize) {
+        List<List<FieldPoint>> lists = new ArrayList<List<FieldPoint>>(ourAntsInBattle.size() / maxGroupSize + 1);
+        for (int i = 0; i < ourAntsInBattle.size(); i+= maxGroupSize) {
+            lists.add(ourAntsInBattle.subList(i, i+maxGroupSize >= ourAntsInBattle.size() ? ourAntsInBattle.size() : i+maxGroupSize));
+        }
+        return lists;
+    }
+
+    private List<BattleUnit<FieldPoint>> toBattleUnits(List<FieldPoint> points, boolean allowStand, boolean onlyStand) {
         List<BattleUnit<FieldPoint>> units = new ArrayList<BattleUnit<FieldPoint>>(points.size());
         for (FieldPoint point: points) {
-            units.add(new AntBattleUnit(point, field));
+            units.add(new AntBattleUnit(point, field, allowStand, onlyStand));
         }
         return units;
     }

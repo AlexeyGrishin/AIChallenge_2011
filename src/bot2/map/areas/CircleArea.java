@@ -10,7 +10,7 @@ public class CircleArea implements Area {
     private static AreasCache<Integer> cache = new AreasCache<Integer>(new AreaCalculator<Integer>() {
         public List<ViewPoint> calculate(Integer radius2) {
             List<ViewPoint> points = new ArrayList<ViewPoint>(radius2*4);
-            int radius = (int)Math.floor(MathCache.sqrt(radius2));
+            int radius = sqrt(radius2);
             for (int x = -radius; x <= radius; x++) {
                 for (int y = -radius; y <= radius; y++) {
                     long distance = MathCache.square(x) + MathCache.square(y);
@@ -22,6 +22,10 @@ public class CircleArea implements Area {
             return points;
         }
     });
+
+    private static int sqrt(Integer radius2) {
+        return (int)Math.floor(MathCache.sqrt(radius2));
+    }
 
     List<ViewPoint> getPoints() {
         return cache.getPoints(radius2);
@@ -54,5 +58,9 @@ public class CircleArea implements Area {
 
     public int getRadius2() {
         return radius2;
+    }
+
+    public QuickArea toQuickArea() {
+        return new QuickArea(getPoints(), 2*sqrt(radius2));
     }
 }

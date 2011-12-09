@@ -28,44 +28,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @SuppressWarnings("unchecked")
-public class BattleTest {
+public class BattleTest extends BattleTestAbstract {
 
-    public static final Answer<Object> MAX_DAMAGE = new Answer<Object>() {
-        public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
-            List<BattleCase<FieldPoint>> cases = (List<BattleCase<FieldPoint>>) invocationOnMock.getArguments()[0];
-            return BattleStrategy.maxDamage(cases);
-        }
-    };
-    public static final Answer<Object> MIN_LOST = new Answer<Object>() {
-        public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
-            List<BattleCase<FieldPoint>> cases = (List<BattleCase<FieldPoint>>) invocationOnMock.getArguments()[0];
-            return BattleStrategy.minLost(cases);
-        }
-    };
-    @Mock MoveHelper mover;
-    @Mock View view;
-    @Mock GameSettings settings;
-    @Mock GameStrategy strategy;
-    Battle battle;
-    private MockField field;
-
-    @Before
-
-    public void setUp() {
-        MockitoAnnotations.initMocks(this);
-        when(view.getEnemiesCount()).thenReturn(2);
-        when(settings.getAttackRadius()).thenReturn(2);
-        when(settings.getAttackRadius2()).thenReturn(5);
-        field = new MockField(50, 50);
-        field.makeAllVisible();
-        battle = new Battle(settings, field, strategy);
-        when(mover.canMoveTo(any(FieldPoint.class))).thenReturn(true);
-        when(mover.move(any(FieldPoint.class), any(FieldPoint.class))).thenAnswer(new Answer<Object>() {
-            public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
-                return invocationOnMock.getArguments()[1];
-            }
-        });
+    protected MockField produceField() {
+        return new MockField(150, 150);
     }
+
 
     @Test
     public void twoAntsMaxDamage() {
@@ -120,21 +88,6 @@ public class BattleTest {
         battle.process(ants);
         verify(mover).move(FieldPoint.point(13, 10), FieldPoint.point(12, 10));
         verify(mover).move(FieldPoint.point(7, 10), FieldPoint.point(8, 10));
-
     }
 
-    private List<Ant> list(Ant... ants) {
-        List<Ant> rants = new ArrayList<Ant>();
-        Collections.addAll(rants, ants);
-        return rants;
-    }
-
-    private void createEnemyAnt(FieldPoint point) {
-        field.setItem(point, Item.ENEMY_ANT);
-    }
-
-    Ant createAnt(FieldPoint point) {
-        field.setItem(point, Item.ANT);
-        return new Ant(point, mover, view);
-    }
 }

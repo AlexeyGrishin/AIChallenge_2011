@@ -48,7 +48,7 @@ public class Bot extends AbstractSystemInputParser implements MoveHelper, AntLoc
     }
 
     private List<Integer> turnsToStop = Arrays.asList(
-            132
+            242
     );
 
     @Override

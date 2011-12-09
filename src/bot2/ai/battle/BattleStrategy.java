@@ -1,5 +1,6 @@
 package bot2.ai.battle;
 
+import bot2.Logger;
 import bot2.map.FieldPoint;
 
 import java.util.List;
@@ -10,6 +11,7 @@ public class BattleStrategy {
 
 
     public static BattleCase<FieldPoint> maxDamage(List<BattleCase<FieldPoint>> cases) {
+        Logger.log(cases.toString());
         BattleCase<FieldPoint> res = cases.get(0);
         for (BattleCase<FieldPoint> bCase: cases) {
             switch (compare(bCase.resolution.maxEnemiesLost, res.resolution.maxEnemiesLost)) {
@@ -19,12 +21,12 @@ public class BattleStrategy {
                 case EQUAL:
                     switch (compare(bCase.resolution.minEnemiesLost, res.resolution.minEnemiesLost)) {
                         case FIRST_LARGER:
+                        case EQUAL:
                             res = bCase;
                             break;
-                        case EQUAL:
-                            if (bCase.resolution.minLost < res.resolution.minLost) {
-                                res = bCase;
-                            }
+                            //if (bCase.resolution.minLost < res.resolution.minLost) {
+                            //    res = bCase;
+                            //}
                     }
                     break;
             }

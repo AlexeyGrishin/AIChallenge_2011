@@ -10,7 +10,6 @@ import java.util.Set;
 
 public class BattlePredictor<P> {
 
-    private BattleResolutor<P> resolutor = new BattleResolutor<P>();
 
     public List<BattleCase<P>> predictBattle(List<BattleUnit<P>> ourUnits, List<BattleUnit<P>> enemies, BattleAdvisor<P> advisor) {
         List<BattleCase<P>> cases = new ArrayList<BattleCase<P>>();
@@ -31,18 +30,25 @@ public class BattlePredictor<P> {
             }
         }
 
+        BattleResolutor<P> resolutor = new BattleResolutor<P>(ourUnits.size(), enemies.size());
         //here we have steps and can iterate over them
         BattleUnits<P> ourUnitsIterator = new BattleUnits<P>(ourUnits, pointsUnderAttack);
 
+        CachedBattleUnits<P> enemyUnitsIterator = new CachedBattleUnits<P>(new BattleUnits<P>(enemies, attackersPoints));
+        int amount = 0;
+        //List<BattleUnitStep<P>> standState = enemyUnitsIterator.currentSet();
         for (List<BattleUnitStep<P>> unitSteps: ourUnitsIterator) {
             BattleCase<P> bCase = new BattleCase<P>(unitSteps);
-            BattleUnits<P> enemyUnitsIterator = new BattleUnits<P>(enemies, attackersPoints);
+            boolean enemiesStand = true;
             for (List<BattleUnitStep<P>> enemiesSteps: enemyUnitsIterator) {
                 BattleResolutor.BattleResolution resolution = resolutor.resolute(unitSteps, enemiesSteps, advisor);
-                bCase.resolution.onResolution(resolution.ourLost, resolution.enemiesLost, resolution.enemiesStand);
+                bCase.resolution.onResolution(resolution.ourLost, resolution.enemiesLost, enemiesStand);
+                amount++;
+                enemiesStand = false;
             }
             cases.add(bCase);
         }
+        Logger.log("Our units: " + ourUnits.size() + ", enemies: " + enemies.size() + ", cases: " + amount);
 
         return cases;
     }

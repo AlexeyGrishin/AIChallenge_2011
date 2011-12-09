@@ -2,7 +2,6 @@ package bot2.ai.battle;
 
 import common.MapList;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -11,10 +10,30 @@ public class BattleResolutor<P> {
     public static class BattleResolution {
         int ourLost = 0;
         int enemiesLost = 0;
-        boolean enemiesStand = false;
+    }
+
+    private BattleField field;
+
+    public BattleResolutor(int ours, int enemies) {
+        field = new BattleField(ours, enemies);
     }
 
     public BattleResolution resolute(List<BattleUnitStep<P>> ourSteps, List<BattleUnitStep<P>> enemiesSteps, BattleAdvisor<P> advisor) {
+        field.clear();
+        for (int our = 0; our < ourSteps.size(); our++) {
+            for (int enemy = 0; enemy < enemiesSteps.size(); enemy++) {
+                if (advisor.isUnderAttack(ourSteps.get(our).getPoint(), enemiesSteps.get(enemy).getPoint())) {
+                    field.attacked(our, enemy);
+                }
+            }
+        }
+        BattleResolution resolution = new BattleResolution();
+        BattleField.Dead dead = field.getDead();
+        resolution.enemiesLost = dead.enemies;
+        resolution.ourLost = dead.our;
+        return resolution;
+        /*
+
         Map<BattleUnit<P>, Integer> weakness = new HashMap<BattleUnit<P>, Integer>();
         MapList<BattleUnit<P>, BattleUnit<P>> attackedBy = new MapList<BattleUnit<P>, BattleUnit<P>>();
         //1. setup references
@@ -39,7 +58,7 @@ public class BattleResolutor<P> {
         resolution.enemiesStand = areEnemiesStand(enemiesSteps);
         resolution.enemiesLost = getDied(enemiesSteps, weakness, attackedBy);
         resolution.ourLost = getDied(ourSteps, weakness, attackedBy);
-        return resolution;
+        return resolution;    */
 
     }
 

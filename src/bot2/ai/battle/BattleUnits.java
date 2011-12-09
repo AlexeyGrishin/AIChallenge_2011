@@ -1,12 +1,14 @@
 package bot2.ai.battle;
 
+import bot2.Logger;
+
 import java.util.*;
 
 public class BattleUnits<P> implements Iterable<List<BattleUnitStep<P>>> {
 
     private List<BattleUnit<P>> units;
     private List<LinkedList<Integer>> steps;
-    private List<BattleUnitStep<P>> currentSet;
+    private ArrayList<BattleUnitStep<P>> currentSet;
     private boolean lastSet = false;
 
     public BattleUnits(List<BattleUnit<P>> units, Collection<P> underAttack) {
@@ -36,8 +38,10 @@ public class BattleUnits<P> implements Iterable<List<BattleUnitStep<P>>> {
     }
 
     public void iterate() {
+        //boolean add = false;
         if (currentSet == null) {
             currentSet = new ArrayList<BattleUnitStep<P>>(units.size());
+            //add = true;
         }
         else {
             lastSet = true;
@@ -52,7 +56,9 @@ public class BattleUnits<P> implements Iterable<List<BattleUnitStep<P>>> {
                 }
             }
         }
-
+        if (lastSet) {
+            return;
+        }
         currentSet.clear();
         int unit = 0;
         for (LinkedList<Integer> list: steps) {
@@ -63,7 +69,10 @@ public class BattleUnits<P> implements Iterable<List<BattleUnitStep<P>>> {
                     return;
                 }
             }
-            currentSet.add(step);
+            //if (add)
+                currentSet.add(step);
+            //else
+           //     currentSet.set(unit, step);
             unit++;
         }
 

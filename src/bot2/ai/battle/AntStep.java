@@ -20,7 +20,7 @@ public class AntStep implements BattleUnitStep<FieldPoint> {
     }
 
     public boolean isCompatibleWith(BattleUnitStep<FieldPoint> anotherStep) {
-        return !anotherStep.getPoint().equals(thisPoint);
+        return anotherStep.getPoint() != thisPoint;
     }
 
     public FieldPoint getPoint() {

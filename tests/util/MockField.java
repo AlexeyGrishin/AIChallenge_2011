@@ -29,9 +29,7 @@ public class MockField extends Field {
                 if (type != null) {
                     this.setItem(col, row, type);
                 }
-                else {
-                    getMarkedPoints(c).add(new FieldPoint(col, row));
-                }
+                getMarkedPoints(c).add(new FieldPoint(col, row));
             }
         }
     }

@@ -6,10 +6,7 @@ import bot2.ai.areas.Areas;
 import bot2.ai.areas.AreasPathHelper;
 import bot2.ai.areas.FieldArea;
 import bot2.ai.areas.distribution.*;
-import bot2.ai.battle.Battle;
-import bot2.ai.battle.BattleCase;
-import bot2.ai.battle.BattleCaseResolution;
-import bot2.ai.battle.BattleStrategy;
+import bot2.ai.battle.*;
 import bot2.map.Field;
 import bot2.map.FieldPoint;
 import bot2.map.Item;
@@ -22,6 +19,7 @@ import static bot2.ai.battle.BattleStrategy.minLost;
 
 public class AI implements GameStrategy {
 
+    public static final int MAX_BATTLE_PARTICIPANTS = 12;
     private Assigner areasDistributor = new Assigner();
     private Assigner areasDistributorUnreached = new Assigner();
     private BetweenTargetsDistributor<AreaWalker, FieldArea> antByAreasDistributor = new BetweenTargetsDistributor<AreaWalker, FieldArea>();
@@ -34,6 +32,9 @@ public class AI implements GameStrategy {
     }
 
     public void doTurn(List<Ant> ants, Field field, Areas areas, Hills hills) {
+        prevBattles.clear();
+        prevBattles.addAll(currentBattles);
+        currentBattles.clear();
         List<Ant> freeAnts = new ArrayList<Ant>(ants);
         doBattle(field, freeAnts);
         doAttackVisibleHills(freeAnts, hills, field);
@@ -107,14 +108,6 @@ public class AI implements GameStrategy {
                         new AreasPathHelper(field)
                 );
                 Collection<DistributableArea> notReached = wrapper.wrap(getNotReachedAreas(areas));//new ArrayList<DistributableArea>(areas.getCount());
-                /*boolean existingUnreached = false;
-                for (FieldArea area: areas.getAllAreas()) {
-                    if (area == null) break;
-                    if (!area.isReached()) {
-                        existingUnreached = true;
-                    }
-                    notReached.add(wrapper.wrap(area));
-                } */
                 if (!notReached.isEmpty()) {
                     Logger.log("Send not distributed ants to unreached areas");
                     //TODO: ugly
@@ -205,13 +198,47 @@ public class AI implements GameStrategy {
         return res;
     }
 
+    private List<List<FieldPoint>> prevBattles = new LinkedList<List<FieldPoint>>();
+    private List<List<FieldPoint>> currentBattles = new LinkedList<List<FieldPoint>>();
+
+    public SingleBattleStrategy getSingleBattleStrategy(List<FieldPoint> ourAntsInBattle, List<FieldPoint> enemiesInBattle) {
+        boolean allowOurToStand = true; //detect previous step
+        currentBattles.add(ourAntsInBattle);
+        boolean onlyStandEnemies = ourAntsInBattle.size() + enemiesInBattle.size() > MAX_BATTLE_PARTICIPANTS;
+        int maxGroupSize = MAX_BATTLE_PARTICIPANTS;
+        return new SingleBattleStrategy(onlyStandEnemies, allowOurToStand, maxGroupSize);
+    }
+
     private BattleCase<FieldPoint> resolute(List<BattleCase<FieldPoint>> cases, List<FieldPoint> ours, List<FieldPoint> enemies) {
+        boolean allowOurToStand = true;
+        for (List<FieldPoint> prevBattle: prevBattles) {
+            if (prevBattle.equals(ours)) {
+                Logger.log("Same battle position, so do not stand: " + ours);
+                allowOurToStand = false;
+                break;
+            }
+        }
+
         if (ours.size() > enemies.size()) {
-            return addFlag(maxDamage(cases), "Attack");
+            return addFlag(maxDamage(exStand(cases, allowOurToStand)), "Attack");
         }
         else {
-            return minLost(cases);
+            return minLost(exStand(cases, allowOurToStand));
         }
+    }
+
+    private List<BattleCase<FieldPoint>> exStand(List<BattleCase<FieldPoint>> cases, boolean allowOurToStand) {
+        if (allowOurToStand || cases.size() == 1) return cases;
+        List<BattleCase<FieldPoint>> casesWoStand = new ArrayList<BattleCase<FieldPoint>>(cases.size());
+        for (BattleCase<FieldPoint> bCase: cases) {
+            for (BattleUnitStep<FieldPoint> bus: bCase.ourUnitsSteps) {
+                if (!bus.isStand()) {
+                    casesWoStand.add(bCase);
+                    break;
+                }
+            }
+        }
+        return casesWoStand;
     }
 
     private BattleCase<FieldPoint> addFlag(BattleCase<FieldPoint> c, String flag) {
