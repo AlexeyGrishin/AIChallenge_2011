@@ -1,0 +1,533 @@
+<html>
+<head>
+	<script src="jquery-1.7.min.js"></script>
+	<script src="jquery.rightClick.js"></script>
+	<script>
+	
+	var size = 20;
+	var ENEMY_CLR = "#cc0000";
+	var OUR_CLR = "#0000cc";
+	
+	var AField = function(anotherField) {
+		var asize = anotherField ? anotherField.length : size;
+		for (var i = 0; i < asize; i++) {
+			var row = [];
+			this.push(row);
+			for (var j = 0; j < asize; j++) {
+				row.push(anotherField ? {type: anotherField[i][j].type} : {});
+			}
+		}
+	}
+	
+	AField.prototype = [];
+	
+	AField.prototype.include = function(x, y) {
+		return x >=0 && y >= 0 && x < size && y < size;
+	};
+	
+	AField.prototype.each = function(f) {
+		for (var y = 0; y < size; y++) {
+			for (var x = 0; x < size; x++) {
+				f(this[y][x], x, y);
+			}
+		}
+	};
+	
+	AField.prototype.dist2 = function(x1, y1, x2, y2) {
+		return Math.sqr(x2 - x1) + Math.sqr(y2 - y1)
+	};
+	
+	AField.prototype.eachInArea = function(cx, cy, radius, radius2, f) {
+		for (var x = cx -  radius; x <= cx +  radius; x++) {
+			for (var y = cy -  radius; y <= cy +  radius; y++) {
+				if (this.include(x, y) && this.dist2(x, y, cx, cy) <= radius2) {
+					f(x, y);
+				}
+			}
+		}
+	};
+	
+	function log(text) {
+		$("#results").html(text);
+	}
+	
+	var Field = new AField();
+	
+	Math.sqr = function(n) {return n*n;}
+	
+	var MoveAssistor = {
+		movements: ["", "r", "l", "d", "u"],
+		alog: undefined,
+		
+		SmartEnemy_MinLost: {
+			compare: function(bestMovement, nextMv) {
+				var lessLost = bestMovement.maxDies > nextMv.maxDies;
+				var sameLost = bestMovement.maxDies == nextMv.maxDies;
+				var moreAttacked = bestMovement.minAttack < nextMv.minAttack;
+				var sameAttacked = bestMovement.minAttack == nextMv.minAttack;
+				var closest = bestMovement.closerToTarget < nextMv.closerToTarget;
+				if (lessLost ||
+					(sameLost && moreAttacked) ||
+					(sameLost && sameAttacked && closest)) {
+					return nextMv;
+				}
+				return bestMovement;
+			
+			},
+			enemyMovements: ["", "r", "l", "d", "u"]
+		},
+
+		StupidEnemy_MinLost: {
+			compare: function(bestMovement, nextMv) {
+				var lessLost = Math.round(bestMovement.avgDies) > Math.round(nextMv.avgDies);
+				var sameLost = Math.round(bestMovement.avgDies) == Math.round(nextMv.avgDies);
+				var moreAttacked = bestMovement.avgAttack < nextMv.avgAttack;
+				var sameAttacked = bestMovement.avgAttack == nextMv.avgAttack;
+				var closest = bestMovement.closerToTarget < nextMv.closerToTarget;
+				if (lessLost ||
+					(sameLost && moreAttacked) ||
+					(sameLost && sameAttacked && closest)) {
+					return nextMv;
+				}
+				return bestMovement;		
+			},
+			enemyMovements: [""]
+		},
+		
+		assist: function(field, strategy) {
+			this.clearLog();
+			var our = this.collect(field, "my");
+			var enemies = this.collect(field, "enemy");
+			var moves = [];
+			if (our.length > 0) {
+				return this.moveOur(field, our, enemies, moves, strategy || this.SmartEnemy_MinLost);
+			}
+		},
+		
+		collect: function(field, type) {
+			var c = [];
+			field.each(function(cell, x, y) {
+				if (cell.type == type) {
+					c.push({x:x, y:y});
+				}
+			});
+			return c;
+		},
+		
+		log: function(s) {
+			if (typeof s == Array) {
+				this.log(s.join("  "));
+				return;
+			}
+			this.alog.html(this.alog.html() + s + "<br/>");
+		},
+		
+		clearLog: function() {
+			this.alog.html("");
+		},
+		
+		moveOur: function(field, our, enemies, moves, strategy) {
+			var mv = [];
+			this.moveThem(field, our, moves, $.proxy(function() {
+				var movement = {moves: moves.slice(), toString: function() {
+					return "Our -" + this.avgDies + "(max=" + this.maxDies 
+					  + "), Their -" + this.avgAttack + "(min=" + this.minAttack + ") Distance -" + this.closerToTarget + " if " + this.moves;
+					}
+				};
+				movement.maxDies = 0;
+				movement.avgDies = 0;
+				movement.minAttack = undefined;
+				movement.avgAttack = 0;
+				var sumDies = 0, sumAttack = 0, count = 0;
+				movement.closerToTarget = 0;
+				if (enemies.length > 0) {
+					var calc = $.proxy(function() {
+						var res = this.calculate(field, moves);
+						if (movement.maxDies <= res.ourDied) {
+							movement.maxDies = res.ourDied;
+							if (movement.minAttack == undefined) movement.minAttack = 99999;
+							movement.minAttack = Math.min(res.enemiesDied, movement.minAttack);
+						}
+						count++;
+						sumDies += res.ourDied;
+						sumAttack += res.enemiesDied;
+						
+					}, this);
+					if (strategy.enemyMovements == [""]) {
+						calc();
+					}
+					else {
+						this.moveThem(field, enemies, moves, calc);
+					}
+					movement.avgDies = sumDies / count;
+					movement.avgAttack = sumAttack / count;
+				}
+				for (var i = 0; i < moves.length; i++) {
+					if (moves[i].where == "d") {
+						movement.closerToTarget++;
+					}
+				}
+				movement.closerToTarget = Math.max(0, movement.closerToTarget - movement.maxDies);
+				if (movement.minAttack == undefined) movement.minAttack = 0;
+				mv.push(movement);
+			}, this));
+			if (mv.length > 0) {
+				var bestMovement = mv[0];
+				for (var i = 1; i < mv.length; i++) {
+					bestMovement = strategy.compare(bestMovement, mv[i]);
+				}
+			}
+			this.log("Best: " + bestMovement);
+			this.log(mv.join("<br/>"));
+			return bestMovement;
+		},
+		
+		moveThem: function(field, collection, moves, finishStep) {
+			var ant = collection.pop();
+			for (var i = 0; i < this.movements.length; i++) {
+				if (this.canMove(field, ant.x, ant.y, this.movements[i])) {
+					moves.push({x: ant.x, y: ant.y, where: this.movements[i], toString: function() {return this.x + " " + this.y + " " + this.where}});
+					if (collection.length > 0) {
+						this.moveThem(field, collection, moves, finishStep);
+					}
+					else {
+						//this.log(moves);
+						finishStep();
+						//enemies
+					}
+					moves.pop();
+				}
+			}			
+			collection.push(ant);
+		
+		},
+		
+		calculate: function(field, moves) {
+			var newField = new AField(field);
+			for (var i = 0; i < moves.length; i++) {
+				this.move(newField, moves[i].x, moves[i].y, moves[i].where);
+			}
+			return BattleResolutor.resolute(newField, Battle.attack, Battle.attack2);
+		},
+		
+		canMove: function(field, x, y, where) {
+			if (where == "") return true;
+			var np = this.movement(x, y, where);
+			return field[np.y][np.x].type == undefined;
+		},
+		
+		move: function(field, x, y, where) {
+			if (where =="") return;
+			var old = field[y][x].type;
+			field[y][x].type = undefined;
+			var np = this.movement(x, y, where);
+			field[np.y][np.x].type = old;
+		},
+		
+		movement: function(x, y, where) {
+			switch (where) {
+				case "r": return {x:x+1, y:y};
+				case "l": return {x:x-1, y:y};
+				case "u": return {x:x, y:y-1};
+				case "d": return {x:x, y:y+1};
+			}
+			return {x:x, y:y};
+		}
+		
+	};
+	
+	var BattleResolutor = {
+		resolute: function(field, attack, attack2) {
+			this.attack = attack;
+			this.attack2 = attack2;
+			var result = {ourDied: 0, enemiesDied: 0};
+			result.ants = [];
+			result.antsByCoord = [];
+			for (var y = 0; y < size; y++) {
+				for (var x = 0; x < size; x++) {
+					var cell = field[y][x];
+					if (cell.type) {
+						var res = this.resoluteBattle(field, x, y);
+						result.ants.push(res);
+						if (res.willdie) {
+							if (cell.type == "my")
+								result.ourDied++;
+							else
+								result.enemiesDied++;
+						}
+						if (!result.antsByCoord[y]) result.antsByCoord[y] = [];
+						result.antsByCoord[y][x] = res;
+						
+					}
+				}
+			}
+			return result;
+		},
+		
+		resoluteBattle: function(field, x, y) {
+			var enemiesWeaknesses = this.weaknessOfEnemiesInAttackArea(field, x, y, this.enemy(field[y][x].type));
+			var ourWeakness = enemiesWeaknesses.length;
+			var minWeakness = enemiesWeaknesses.length > 0 ? enemiesWeaknesses[0] : 0;
+			for (var i = 1; i < enemiesWeaknesses.length; i++) {
+				minWeakness = Math.min(minWeakness, enemiesWeaknesses[i]);
+			}
+			/*
+			Field[y][x].willdie = (ourWeakness > 0) && (minWeakness <= ourWeakness);
+			Field[y][x].weakness = ourWeakness;// + "/" + minWeakness;*/
+			field[y][x].weakness = ourWeakness;
+			return {x:x, y:y, willdie: (ourWeakness > 0) && (minWeakness <= ourWeakness), weakness: ourWeakness};
+		},
+		
+		enemy: function(type) {
+			return type == "my" ? "enemy" : "my";
+		},
+		
+		weaknessOfEnemiesInAttackArea: function(field, x, y, whoIsEnemy) {
+			var weakness = [];
+			var enemies = this.enemiesInAttackArea(field, x, y, whoIsEnemy);
+			for (var i = 0; i < enemies.length; i++) {
+				var w = field[enemies[i].x][enemies[i].y].weakness;
+				if (w == undefined) {
+					w = this.enemiesInAttackArea(field, enemies[i].x, enemies[i].y, this.enemy(whoIsEnemy)).length;
+					field[enemies[i].x][enemies[i].y].weakness = w;
+				}
+				weakness.push(w);
+			}
+			return weakness;
+		},
+		
+		enemiesInAttackArea: function(field, x, y, whoIsEnemy) {
+			var enemies = [];
+			field.eachInArea(x, y, this.attack, this.attack2, function(x, y) {
+				if (field[y][x].type == whoIsEnemy) {
+					enemies.push({x:x, y:y});
+				}
+			});
+			return enemies;
+		}
+
+	};
+	
+	var Battle = {
+		px: 20,
+		
+		init: function() {
+			$("#canvas").mousemove($.proxy(function(e) {
+				var x = this.x(e);
+				var y = this.y(e);
+				this.hover = {x:x, y:y};
+				//this.visualize();
+				
+			}, this));
+			$("#canvas").mouseleave($.proxy(function(e) {
+				this.hover = {};
+				this.visualize();
+			}, this));
+
+			var click = $.proxy(function(e, type) {
+				var x = this.x(e);
+				var y = this.y(e);
+				
+				var cell = Field[y][x];
+				cell.type = cell.type ? undefined : type;
+				this.recalculate();
+			
+			}, this);
+			$("#canvas").rightClick(function(e) {
+				click(e, "enemy");
+			});
+			$("#canvas").click(function(e) {
+				click(e, "my");
+			});
+			$("#calculate").click(function() {
+				Battle.recalculate();
+			});
+			$("#assist").click(function() {
+				Battle.assist();
+			});
+			this.visualize();
+		},
+		
+		x: function(e) {
+			return Math.floor((e.clientX - $("#canvas").offset().left) / this.px);
+		},
+		
+		y: function(e) {
+			return Math.floor((e.clientY - $("#canvas").offset().top) / this.px);
+		},
+		
+		assist: function() {
+			var res = MoveAssistor.assist(Field, $("#stupid").attr("checked") ? MoveAssistor.StupidEnemy_MinLost : MoveAssistor.SmartEnemy_MinLost);
+			Field.each(function(c) {
+				c.direction = undefined;
+			});
+			for (var i = 0; i < res.moves.length; i++) {
+				var r = res.moves[i];
+				Field[r.y][r.x].direction = r.where;
+			}
+			this.visualize();
+		},
+		
+		
+		recalculate: function() {
+			this.attack2 = $("#radius").val() * 1;
+			this.attack = Math.ceil(Math.sqrt(this.attack2));
+			Field.each(function(cell, x, y) {
+				if (cell.type) {
+					cell.type = cell.type;
+				}
+				cell.myAttacked = undefined;
+				cell.enemyAttacked = undefined;
+				cell.willdie = false;
+				cell.weakness = undefined;
+			});
+			var resolution = BattleResolutor.resolute(Field, this.attack, this.attack2);
+			for (var y = 0; y < size; y++) {
+				for (var x = 0; x < size; x++) {
+					var cell = Field[y][x];
+					if (cell.type) {
+						this.fillAttackArea(x, y, cell.type);
+						if (resolution.antsByCoord[y] != undefined && resolution.antsByCoord[y][x] != undefined) {
+							var r = resolution.antsByCoord[y][x];
+							cell.willdie = r.willdie;
+							cell.weakness = r.weakness;
+						}
+					}
+				}
+			}
+			var a = "";
+			Field.each(function(cell, x ,y) {
+				if (cell.willdie) a = a + x + "," + y + "  ";
+			});
+			$("#results").html(a);
+			this.visualize();
+		},
+		
+		eachInAttackArea: function(cx, cy, f) {
+			Field.eachInArea(cx, cy, this.attack, this.attack2, f);			
+		},
+		
+		fillAttackArea: function(cx, cy, type) {
+			Field.eachInArea(cx, cy, this.attack, this.attack2, function(x, y) {
+				Field[y][x][type + "Attacked"] = true;
+			});
+		},
+		
+
+		visualize: function() {
+			var $canvas = $("#canvas");
+			var width = this.px * size;
+			var height = width;
+			var ctx = $canvas[0].getContext('2d');  
+			ctx.fillStyle = "#cccccc";
+			ctx.fillRect(0, 0, width, height);
+			
+			Field.each($.proxy(function(cell, x, y) {
+				this.draw(ctx, cell, x*this.px, y*this.px, this.px, this.px);
+			}, this));
+			/*
+			for (var y = 0; y < size; y++) {
+				for (var x = 0; x < size; x++) {
+					
+				}
+			}*/
+		},
+		
+		drawUnderAttack: function(ctx,x, y, w, h) {
+			ctx.strokeStyle = "black";
+			ctx.strokeRect(x,y,w,h);
+		},
+		
+		draw: function(ctx, cell, x, y, w, h) {
+			ctx.clearRect(x,y,w,h);
+			if (cell.type == "enemy") {
+				ctx.fillStyle = ENEMY_CLR;
+				ctx.fillRect(x, y, w, h);
+			}
+			else if (cell.type == "my") {
+				ctx.fillStyle = OUR_CLR;
+				ctx.fillRect(x, y, w, h);
+			}
+			else {
+				ctx.fillStyle = "#cccccc";
+				ctx.fillRect(x, y, w, h);
+			}
+			if (cell.myAttacked) {
+				ctx.strokeStyle = OUR_CLR;
+				//ctx.fillRect(x + w/2 - 5, y + w/2 - 5, 5, 10);
+				ctx.strokeRect(x, y, w, h);
+			}
+			if (cell.enemyAttacked) {
+				ctx.strokeStyle = ENEMY_CLR;
+				ctx.strokeRect(x+1, y+1, w-2, h-2);
+				//ctx.fillRect(x + w/2, y + w/2 - 5, 5, 10);
+			}
+			if (cell.type && cell.weakness) {
+				ctx.strokeStyle = "white";
+				ctx.strokeText(cell.weakness, x, y+10);
+			}
+			if (cell.type && cell.direction) {
+				ctx.strokeStyle = "white"
+				ctx.beginPath();
+				ctx.moveTo(x + w/2, y + h/2);
+				switch (cell.direction) {
+					case "d": 
+						ctx.lineTo(x + w/2, y + h-2);
+						break;
+					case "u": 
+						ctx.lineTo(x + w/2, y + 2);
+						break;
+					case "l": 
+						ctx.lineTo(x + 2, y + h/2);
+						break;
+					case "r": 
+						ctx.lineTo(x + w - 2, y + h/2);
+						break;
+					case "": 
+						ctx.lineTo(x + w/2, y + h/2);
+						break;
+				};
+				ctx.stroke();
+				
+			}
+			if (cell.willdie) {
+				//ctx.strokeStyle = "white";
+				//ctx.strokeText("x", x, y+10);
+				
+				var crossSize = w / 2;
+				ctx.beginPath();
+				ctx.moveTo(x + crossSize/2, y + crossSize/2);
+				ctx.lineTo(x + w - crossSize/2, y + h - crossSize/2);
+				ctx.stroke();
+				ctx.beginPath();
+				ctx.moveTo(x + w - crossSize/2, y + crossSize/2);
+				ctx.lineTo(x + crossSize/2, y + h - crossSize/2);
+				ctx.stroke();
+			}
+			else {
+				
+			}
+		}
+	};
+	
+	
+	$(function() {
+		Battle.init();
+		MoveAssistor.alog = $("#log");
+	});
+	</script>
+</head>
+<body>
+	Attack radius^2: <input id="radius" value="5"/> <button id="calculate">Calculate</button> <button id="assist">Assist</button> <input type="checkbox" id="stupid"/> Stupid one
+	<br/>
+	<canvas id="canvas" width="400" height="400">
+	</canvas>
+	<br/>
+	<div id="results">
+	</div>
+	<div id="log">
+	</div>
+	
+</body>
+
+</html>
