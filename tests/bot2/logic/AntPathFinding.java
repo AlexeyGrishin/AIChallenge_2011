@@ -42,6 +42,7 @@ public class AntPathFinding {
             }
         });
         when(moveHelper.canMoveTo(any(FieldPoint.class))).thenReturn(true);
+        when(moveHelper.kickOurAntAt(any(FieldPoint.class))).thenReturn(MoveHelper.KickResult.KICKED_OUT);
     }
 
     @Test

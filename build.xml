@@ -1,4 +1,4 @@
-<project name="ololo">
+<project name="AntBot">
 
     <target name="run.battle">
         <exec command="cmd /c play.cmd" dir="./tools" />
@@ -141,6 +141,9 @@
             <arg value="python sample_bots\python\HunterBot.py"/>
         </exec>
     </target>
+
+
+
 
 
 </project>

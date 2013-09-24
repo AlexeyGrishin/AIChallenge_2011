@@ -1,25 +1,10 @@
 package bot2.ai.battle;
 
-import bot2.GameSettings;
-import bot2.MoveHelper;
-import bot2.ai.AI;
 import bot2.ai.Ant;
-import bot2.ai.GameStrategy;
-import bot2.map.Field;
 import bot2.map.FieldPoint;
-import bot2.map.Item;
-import bot2.map.View;
-import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-import util.MockAnts;
 import util.MockField;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import static org.mockito.Matchers.any;
@@ -74,8 +59,8 @@ public class BattleTest extends BattleTestAbstract {
         createEnemyAnt(FieldPoint.point(10, 7));
         List<Ant> ants = list(ant1, ant2);
         battle.process(ants);
-        verify(mover).move(FieldPoint.point(10, 10), FieldPoint.point(10, 9));
-        verify(mover).move(FieldPoint.point(11, 10), FieldPoint.point(11, 9));
+        verify(mover).move(FieldPoint.point(9, 10), FieldPoint.point(8, 10));
+        verify(mover).move(FieldPoint.point(11, 10), FieldPoint.point(10, 10));
     }
 
     @Test
@@ -87,7 +72,7 @@ public class BattleTest extends BattleTestAbstract {
         List<Ant> ants = list(ant1, ant2);
         battle.process(ants);
         verify(mover).move(FieldPoint.point(13, 10), FieldPoint.point(12, 10));
-        verify(mover).move(FieldPoint.point(7, 10), FieldPoint.point(8, 10));
+        verify(mover).move(FieldPoint.point(7, 10), FieldPoint.point(7, 11));
     }
 
 }

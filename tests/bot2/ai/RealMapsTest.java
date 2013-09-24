@@ -56,7 +56,7 @@ public class RealMapsTest extends AreasTestAbstract {
             System.out.println(mapFile);
             processAllAreas();
             field.logAreasMap();
-            field.checkAllCovered(.05, mapFile.getName(), areas);
+            field.checkAllCovered(.06, mapFile.getName(), areas);
             field.checkAreasAmount(areas.getCount(), settings.getViewRadius(), 0.3, mapFile.getName());
             checkAreasLinkedCorrectly();
             Logger.logState(field, mapFile.getName(), areas, Collections.<Ant>emptyList());

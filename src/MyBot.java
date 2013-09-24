@@ -1,5 +1,3 @@
-import bot.brain.BrainBot;
-import bot.brain.Strategy;
 import bot2.Bot;
 
 import java.io.IOException;

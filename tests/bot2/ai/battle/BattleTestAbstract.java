@@ -65,7 +65,7 @@ public abstract class BattleTestAbstract {
                 return invocationOnMock.getArguments()[1];
             }
         });
-        when(strategy.getSingleBattleStrategy(anyListOf(FieldPoint.class), anyListOf(FieldPoint.class))).thenReturn(new SingleBattleStrategy(false, false, 10));
+        when(strategy.getSingleBattleStrategy(anyListOf(FieldPoint.class), anyListOf(FieldPoint.class))).thenReturn(new SingleBattleStrategy(false, true, 10));
     }
 
     protected abstract MockField produceField() throws IOException;

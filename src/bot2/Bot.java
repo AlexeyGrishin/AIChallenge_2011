@@ -1,6 +1,5 @@
 package bot2;
 
-import bot.brain.*;
 import bot2.ai.*;
 import bot2.ai.Ant;
 import bot2.ai.areas.Areas;
